@@ -1,0 +1,20 @@
+[
+  {
+    "id": "RESET_PASSWORD_SETTINGS",
+    "data": {
+      "emailTemplate": "Please follow this link <%=RESET_PASSWORD_LINK%> to reset your password.",
+      "subject": "Reset password",
+      "senderEmail": "noreply@dayoneteams.com",
+      "senderName": "noreply"
+    }
+  },
+  {
+    "id": "VERIFY_ACCOUNT_SETTINGS",
+    "data": {
+      "emailTemplate": "Please follow this link <%=ACCOUNT_VERIFICATION_LINK%> to verify your account.",
+      "subject": "Account verification",
+      "senderEmail": "noreply@dayoneteams.com",
+      "senderName": "noreply"
+    }
+  }
+]
