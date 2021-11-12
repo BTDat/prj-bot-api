@@ -44,7 +44,6 @@ describe('account-email-factory.service', () => {
       });
 
       const expectedErr = new HttpErrors.Forbidden('invalid_account');
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         accountSendMailFactory.buildAccountVerificationEmail(adminAccount),
       ).to.be.rejectedWith(expectedErr);
@@ -67,7 +66,6 @@ describe('account-email-factory.service', () => {
       });
 
       const expectedErr = new HttpErrors.Forbidden('invalid_account');
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         accountSendMailFactory.buildAccountVerificationEmail(inactiveAccount),
       ).to.be.rejectedWith(expectedErr);
@@ -91,7 +89,6 @@ describe('account-email-factory.service', () => {
       });
 
       const expectedErr = new HttpErrors.Forbidden('invalid_account');
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         accountSendMailFactory.buildAccountVerificationEmail(
           alreadyVerifiedAccount,
@@ -120,7 +117,6 @@ describe('account-email-factory.service', () => {
       });
 
       const expectedErr = new Error('email_settings_not_found');
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       expect(
         accountSendMailFactory.buildAccountVerificationEmail(account),
       ).to.be.rejectedWith(expectedErr);

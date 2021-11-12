@@ -1,8 +1,9 @@
-import {model, property, Entity} from '@loopback/repository';
+import {model, property, Entity, belongsTo} from '@loopback/repository';
 import {
   assertStateFalse,
   assertStateTrue,
 } from '../helpers/assertion-concern.helper';
+import {ProfitRate} from './profit-rate.model';
 
 export namespace AccountConstraint {
   export const PASSWORD_MIN_LENGTH = 6;
@@ -42,6 +43,26 @@ export class Account extends Entity {
   })
   id: number;
 
+  @belongsTo(
+    () => ProfitRate,
+    {},
+    {
+      postgresql: {
+        columnName: 'profitRateId',
+      },
+    },
+  )
+  profitRateId: number;
+
+  @property({
+    type: 'string',
+    required: true,
+    index: {
+      unique: true,
+    },
+  })
+  username: string;
+
   @property({
     type: 'string',
     required: true,
@@ -67,9 +88,11 @@ export class Account extends Entity {
   @property({type: 'string'})
   role: Role;
 
+  @property({type: 'string'})
+  status: AccountStatus;
+
   @property({
     type: 'string',
-    required: true,
     jsonSchema: {
       minLength: 1,
       maxLength: 256,
@@ -82,7 +105,6 @@ export class Account extends Entity {
 
   @property({
     type: 'string',
-    required: true,
     jsonSchema: {
       minLength: 1,
       maxLength: 256,
@@ -93,11 +115,9 @@ export class Account extends Entity {
   })
   lastName: string;
 
-  @property({type: 'string'})
-  status: AccountStatus;
-
   @property({
     type: 'boolean',
+    default: false,
     postgresql: {
       columnName: 'emailVerified',
     },

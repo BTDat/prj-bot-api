@@ -50,7 +50,8 @@ export class NodeMailerMailService {
       throw new Error('smtp_settings_not_found');
     }
 
-    const mailSmtpSettings: MailSmtpSettings = smtpConfig.data as MailSmtpSettings;
+    const mailSmtpSettings: MailSmtpSettings =
+      smtpConfig.data as MailSmtpSettings;
 
     const nodemailerTransporter = createTransport({
       host: mailSmtpSettings.smtpHost,

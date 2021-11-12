@@ -22,7 +22,6 @@ import {
 import {authenticate} from '@loopback/authentication';
 import {AUTHENTICATED, authorize, EVERYONE} from '@loopback/authorization';
 import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
-import {config} from '@loopback/context';
 import {
   Account,
   AccountConstraint,
@@ -40,7 +39,6 @@ import {
   Credentials,
   LocalAuthenticationService,
 } from '../services/local-authentication.service';
-import {ConfigBindings} from '../../keys';
 import {AccountFactory} from '../../domain/services/account-factory.service';
 import {AccountSendMailFactory} from '../services/account-send-mail-factory.service';
 
@@ -71,15 +69,14 @@ export class AccountController {
     private authenticationService: LocalAuthenticationService,
 
     @inject(SecurityBindings.USER, {optional: true})
-    private currentAuthUserProfile: UserProfile,
+    private currentAuthUserProfile: UserProfile, // @config({ //   fromBinding: ConfigBindings.APP_CONFIG,
+  ) //   propertyPath: 'frontEndBaseUrl',
+  // })
+  // private frontEndBaseUrl: string,
+  {}
 
-    @config({
-      fromBinding: ConfigBindings.APP_CONFIG,
-      propertyPath: 'frontEndBaseUrl',
-    })
-    private frontEndBaseUrl: string,
-  ) {}
-
+  @authenticate('jwt')
+  @authorize({allowedRoles: [Role.ROOT_ADMIN]})
   @post('/accounts', {
     responses: {
       '200': {
@@ -95,16 +92,34 @@ export class AccountController {
       content: {
         'application/json': {
           schema: getModelSchemaRef(Account, {
-            exclude: ['id', 'createdAt', 'updatedAt'],
+            exclude: [
+              'id',
+              'createdAt',
+              'updatedAt',
+              'password',
+              'role',
+              'status',
+              'emailVerified',
+            ],
             title: 'Account.Create',
           }),
         },
       },
     })
-    values: Omit<Account, 'id'>,
+    values: {
+      profitRateId: number;
+      username: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    },
   ): Promise<Account> {
     const account = await this.accountFactory.buildAccount(values);
-    return this.accountRepository.create(account);
+    const result = await this.accountRepository.create(account);
+
+    this.sendAccountVerificationEmail(account);
+
+    return result;
   }
 
   @authenticate('jwt')
@@ -160,9 +175,9 @@ export class AccountController {
   async findById(
     @param.path.string('id') id: string | number,
   ): Promise<Account> {
-    const accountId = (id === 'me'
-      ? this.currentAuthUserProfile[securityId]
-      : id) as number;
+    const accountId = (
+      id === 'me' ? this.currentAuthUserProfile[securityId] : id
+    ) as number;
     return this.accountRepository.findById(accountId);
   }
 
@@ -245,10 +260,13 @@ export class AccountController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRefExtended(Account, {
-            include: ['email', 'password'],
-            title: 'Account.Login',
-          }),
+          schema: {
+            type: 'object',
+            properties: {
+              usernameOrEmail: {type: 'string'},
+              password: {type: 'string'},
+            },
+          },
         },
       },
     })
@@ -257,9 +275,8 @@ export class AccountController {
     const account = await this.authenticationService.verifyCredentials(
       credentials,
     );
-    const userProfile = this.authenticationService.convertToUserProfile(
-      account,
-    );
+    const userProfile =
+      this.authenticationService.convertToUserProfile(account);
     const token = await this.accountTokenService.generateToken(userProfile);
     return {token};
   }
@@ -300,7 +317,6 @@ export class AccountController {
     account = await this.accountRepository.create(account);
 
     // No need to wait for email sending.
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.sendAccountVerificationEmail(account);
 
     return account;
@@ -490,18 +506,16 @@ export class AccountController {
       token: string;
     },
   ): Promise<void> {
-    const account = await this.accountTokenService.verifyAccountVerificationToken(
-      body.token,
-    );
+    const account =
+      await this.accountTokenService.verifyAccountVerificationToken(body.token);
 
     account.verify();
     await this.accountRepository.save(account);
   }
 
   private async sendAccountVerificationEmail(account: Account): Promise<void> {
-    const email = await this.accountSendMailFactory.buildAccountVerificationEmail(
-      account,
-    );
+    const email =
+      await this.accountSendMailFactory.buildAccountVerificationEmail(account);
     await this.mailService.send(email);
   }
 }

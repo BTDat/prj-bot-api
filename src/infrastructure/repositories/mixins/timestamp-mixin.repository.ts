@@ -11,7 +11,7 @@ import {Constructor} from '@loopback/context';
 export function TimestampRepositoryMixin<
   E extends Entity & {createdAt: Date; updatedAt?: Date},
   ID,
-  R extends Constructor<EntityCrudRepository<E, ID>>
+  R extends Constructor<EntityCrudRepository<E, ID>>,
 >(repository: R, timestampOptions: {updatedAt: boolean} = {updatedAt: true}) {
   return class MixedRepository extends repository {
     async create(entity: DataObject<E>, options?: Options): Promise<E> {

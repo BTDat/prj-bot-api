@@ -45,9 +45,7 @@ abstract class EmailSettings<CP> {
 interface VerifyAccountEmailVariables {
   verificationLink: string;
 }
-export class VerifyAccountSettings extends EmailSettings<
-  VerifyAccountEmailVariables
-> {
+export class VerifyAccountSettings extends EmailSettings<VerifyAccountEmailVariables> {
   private static VerificationLinkVariable = 'ACCOUNT_VERIFICATION_LINK';
 
   constructor(options: EmailSettingData) {
@@ -69,9 +67,7 @@ export class VerifyAccountSettings extends EmailSettings<
 interface ResetPasswordEmailVariable {
   resetPasswordLink: string;
 }
-export class ResetPasswordSettings extends EmailSettings<
-  ResetPasswordEmailVariable
-> {
+export class ResetPasswordSettings extends EmailSettings<ResetPasswordEmailVariable> {
   private static ResetPasswordLinkVariable = 'RESET_PASSWORD_LINK';
 
   public composeEmailContent(values: ResetPasswordEmailVariable): string {

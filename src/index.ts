@@ -9,6 +9,8 @@ export async function main(options: ApplicationConfig = {}) {
   await app.boot();
   await app.start();
 
+  // const pupperteerService = new PuppeteerService()
+
   const url = app.restServer.url;
   console.log(`Server is running at ${url}`);
 
@@ -20,6 +22,8 @@ export async function main(options: ApplicationConfig = {}) {
       `API explorer is running at ${options.rest.apiExplorer.url}/explorer`,
     );
   }
+
+  // await pupperteerService.run()
 
   return app;
 }

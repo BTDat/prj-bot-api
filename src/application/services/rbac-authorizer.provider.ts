@@ -62,7 +62,10 @@ export class RbacAuthorizationProvider implements Provider<Authorizer> {
     }
 
     // Grant access when one of user's roles is allowed.
-    if (metadata.allowedRoles.includes(user.role) || metadata.allowedRoles.includes(AUTHENTICATED)) {
+    if (
+      metadata.allowedRoles.includes(user.role) ||
+      metadata.allowedRoles.includes(AUTHENTICATED)
+    ) {
       return AuthorizationDecision.ALLOW;
     }
 

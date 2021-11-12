@@ -29,15 +29,15 @@ export class AccountSendMailFactory {
       throw new HttpErrors.Forbidden('invalid_account');
     }
 
-    const emailSettings = await this.configurationRepository.getAccountVerificationEmailSettings();
+    const emailSettings =
+      await this.configurationRepository.getAccountVerificationEmailSettings();
 
     if (!emailSettings) {
       throw new Error('email_settings_not_found');
     }
 
-    const token = this.accountTokenService.generateAccountVerificationToken(
-      account,
-    );
+    const token =
+      this.accountTokenService.generateAccountVerificationToken(account);
     const link = `${this.frontEndBaseUrl}/verify-account?token=${token}`;
 
     const emailContent = emailSettings.composeEmailContent({
@@ -58,7 +58,8 @@ export class AccountSendMailFactory {
       throw new HttpErrors.Forbidden('inactive_account');
     }
 
-    const emailSettings = await this.configurationRepository.getResetPasswordEmailSettings();
+    const emailSettings =
+      await this.configurationRepository.getResetPasswordEmailSettings();
 
     if (!emailSettings) {
       throw new Error('email_settings_not_found');

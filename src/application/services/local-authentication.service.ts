@@ -10,13 +10,14 @@ import {PasswordHasher} from '../../domain/services/password-hasher.service';
 import {BcryptPasswordHasher} from '../../infrastructure/services/bcrypt-password-hasher.service';
 
 export type Credentials = {
-  email: string;
+  emailOrUsername: string;
   password: string;
 };
 
 @bind()
 export class LocalAuthenticationService
-  implements UserAuthenticationService<Account, Credentials> {
+  implements UserAuthenticationService<Account, Credentials>
+{
   constructor(
     @repository(AccountRepository)
     private accountRepository: AccountRepository,
@@ -26,10 +27,18 @@ export class LocalAuthenticationService
   ) {}
 
   async verifyCredentials(credentials: Credentials): Promise<Account> {
-    const account = await this.accountRepository.findByEmail(credentials.email);
+    let account = await this.accountRepository.findByUsername(
+      credentials.emailOrUsername,
+    );
+
+    if (!account) {
+      account = await this.accountRepository.findByEmail(
+        credentials.emailOrUsername,
+      );
+    }
 
     if (!account || !account.isActive()) {
-      throw new HttpErrors.Unauthorized('invalid_credentials_email');
+      throw new HttpErrors.Unauthorized('invalid_credentials');
     }
 
     const passwordMatched = await this.passwordHasher.comparePassword(
@@ -38,7 +47,7 @@ export class LocalAuthenticationService
     );
 
     if (!passwordMatched) {
-      throw new HttpErrors.Unauthorized('invalid_credentials_email');
+      throw new HttpErrors.Unauthorized('invalid_credentials');
     }
 
     return account;

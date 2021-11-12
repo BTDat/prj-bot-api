@@ -4,6 +4,7 @@ import {Account, AccountStatus, Role} from '../models/account.model';
 import {AccountRepository} from '../repositories/account.repository';
 import {PasswordHasher} from './password-hasher.service';
 import {IllegalArgumentError} from '../errors/illegal-argument.error';
+import {getRandomString} from '../helpers/random-string';
 
 @bind()
 export class AccountFactory {
@@ -29,7 +30,10 @@ export class AccountFactory {
   }
 
   public async buildAdminAccount(
-    values: Pick<Account, 'email' | 'password' | 'firstName' | 'lastName'>,
+    values: Pick<
+      Account,
+      'email' | 'password' | 'firstName' | 'lastName' | 'username'
+    >,
   ): Promise<Account> {
     return this.buildAccount(
       new Account({
@@ -44,24 +48,37 @@ export class AccountFactory {
   public async buildAccount(
     values: Pick<
       Account,
-      'email' | 'password' | 'firstName' | 'lastName' | 'role'
+      'email' | 'username' | 'firstName' | 'lastName' | 'profitRateId'
     >,
   ): Promise<Account> {
+    const isValid = this.accountRepository.isUserNameValid(values.username);
+    if (!isValid) {
+      throw new IllegalArgumentError('invalid_username');
+    }
     const emailExisted = await this.accountRepository.emailRegistered(
       values.email,
+    );
+
+    const usernameExisted = await this.accountRepository.usernameRegistered(
+      values.username,
     );
 
     if (emailExisted) {
       throw new IllegalArgumentError('email_registered');
     }
 
-    const hashedPassword = await this.passwordHasher.hashPassword(
-      values.password,
-    );
+    if (usernameExisted) {
+      throw new IllegalArgumentError('username_registered');
+    }
+
+    const password = getRandomString(6);
+
+    const hashedPassword = await this.passwordHasher.hashPassword(password);
     return new Account({
       ...values,
       password: hashedPassword,
       status: AccountStatus.ACTIVE,
+      role: Role.USER,
     });
   }
 }

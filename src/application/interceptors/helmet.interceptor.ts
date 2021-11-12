@@ -46,11 +46,9 @@ export class HelmetInterceptor implements Provider<Interceptor> {
     _context: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ): Promise<any> {
-    helmet(
-      {
-        contentSecurityPolicy: false,
-      }
-    )(this.request, this.response, () => null);
+    helmet({
+      contentSecurityPolicy: false,
+    })(this.request, this.response, () => null);
     return next();
   }
 }

@@ -160,9 +160,10 @@ export class ConfigurationController {
       password: string;
     },
   ): Promise<{isValid: boolean}> {
-    const isValid = await this.systemService.isValidSystemInitializationPassword(
-      body.password,
-    );
+    const isValid =
+      await this.systemService.isValidSystemInitializationPassword(
+        body.password,
+      );
     return {isValid};
   }
 
@@ -202,6 +203,7 @@ export class ConfigurationController {
                 type: 'object',
                 properties: {
                   email: {type: 'string'},
+                  username: {type: 'string'},
                   password: {type: 'string'},
                 },
               },
@@ -214,6 +216,7 @@ export class ConfigurationController {
       password: string;
       admin: {
         email: string;
+        username: string;
         password: string;
         firstName: string;
         lastName: string;
