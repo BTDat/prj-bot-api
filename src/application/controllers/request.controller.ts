@@ -163,10 +163,15 @@ export class RequestController {
   @patch('/{id}/reject', {
     responses: {
       '200': {
-        description: 'Object of request',
+        description: 'Reject request',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(Request),
+            schema: {
+              type: 'object',
+              properties: {
+                success: {type: 'boolean'}
+              }
+            },
           },
         },
       },
@@ -174,8 +179,13 @@ export class RequestController {
   })
   @authenticate('jwt')
   @authorize({allowedRoles: [AUTHENTICATED, Role.ROOT_ADMIN]})
-  async rejectRequest(@param.path.number('id') id: number): Promise<void> {
-    const request = await this.requestRepository.findById(id);
+  async rejectRequest(@param.path.number('id') id: number): Promise<{success: boolean}> {
+    const request = await this.requestRepository.findOne({
+      where: {
+        id,
+        status: RequestStatus.PENDING
+      }
+    });
     if (!request) {
       throw new HttpErrors.BadRequest('request_does_not_exist');
     }
@@ -184,15 +194,18 @@ export class RequestController {
       updatedAt: new Date()
     });
     this.sendRejectionEmail(request.data.email)
+    return {
+      success: true
+    }
   }
 
   @post('/{id}/accept', {
     responses: {
       '200': {
-        description: 'Object of request',
+        description: 'Object of Account',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(Request),
+            schema: getModelSchemaRef(Account),
           },
         },
       },
@@ -220,7 +233,12 @@ export class RequestController {
       password: string;
     },
   ): Promise<Account> {
-    const request = await this.requestRepository.findById(id);
+    const request = await this.requestRepository.findOne({
+      where: {
+        id,
+        status: RequestStatus.PENDING
+      }
+    });
     if (!request) {
       throw new HttpErrors.BadRequest('request_does_not_exist');
     }
