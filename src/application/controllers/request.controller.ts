@@ -164,6 +164,7 @@ export class RequestController {
       status: RequestStatus.DENIED,
       updatedAt: new Date()
     });
+    this.sendRejectionEmail(request.data.email)
   }
 
   @post('/{id}/accept', {
@@ -189,6 +190,7 @@ export class RequestController {
             type: 'object',
             properties: {
               profitRate: {type: 'number'},
+              password: {type: 'string'}
             },
           },
         },
