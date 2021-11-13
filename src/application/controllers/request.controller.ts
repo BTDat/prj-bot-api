@@ -206,15 +206,11 @@ export class RequestController {
     const {
       data: {email, username, firstName, lastName},
     } = request;
-    const {profitRate, password} = values;
+    const {profitRate, password} = values
     const result = await this.accountCreationService.createAccount({
-      email,
-      username,
-      firstName,
-      lastName,
-      profitRate,
-      password,
-    });
+      email, username, firstName, lastName, profitRate, password
+    })
+    
     await this.requestRepository.updateById(id, {
       status: RequestStatus.SUCCESS,
       updatedAt: new Date()
