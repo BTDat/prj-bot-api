@@ -47,7 +47,7 @@ export class RequestController {
     private accountSendMailFactory: AccountSendMailFactory,
   ) {}
 
-  @post('', {
+  @post('/register', {
     responses: {
       '200': {
         description: 'New Request',
@@ -64,8 +64,6 @@ export class RequestController {
       },
     },
   })
-  @authenticate('jwt')
-  @authorize({allowedRoles: [AUTHENTICATED]})
   async createRequest(
     @requestBody({
       content: {
@@ -73,7 +71,8 @@ export class RequestController {
           schema: {
             type: 'object',
             properties: {
-              rate: {type: 'number'},
+              type: {type: 'string'},
+              data: {type: 'object'},
             },
           },
         },
