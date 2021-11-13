@@ -39,7 +39,7 @@ export class AccountFactory {
   public async buildAdminAccount(
     values: Pick<
       Account,
-      'email' | 'password' | 'firstName' | 'lastName' | 'username'
+      'email' | 'password' | 'username'
     >,
   ): Promise<RawAccount> {
     return this.buildAccount(
