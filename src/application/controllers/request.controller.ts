@@ -162,6 +162,7 @@ export class RequestController {
     }
     await this.requestRepository.updateById(id, {
       status: RequestStatus.DENIED,
+      updatedAt: new Date()
     });
   }
 
@@ -216,6 +217,7 @@ export class RequestController {
     });
     await this.requestRepository.updateById(id, {
       status: RequestStatus.SUCCESS,
+      updatedAt: new Date()
     });
     return result;
   }
