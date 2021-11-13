@@ -50,13 +50,13 @@ export class AccountFactory {
       values.email,
     );
 
-    const usernameExisted = await this.accountRepository.usernameRegistered(
-      values.username,
-    );
-
     if (emailExisted) {
       throw new IllegalArgumentError('email_registered');
     }
+
+    const usernameExisted = await this.accountRepository.usernameRegistered(
+      values.username,
+    );
 
     if (usernameExisted) {
       throw new IllegalArgumentError('username_registered');

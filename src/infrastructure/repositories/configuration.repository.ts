@@ -31,7 +31,7 @@ export class ConfigurationRepository extends TimestampRepositoryMixin<
     RejectionSettings | undefined
   > {
     const config = await this.findById(
-      ConfigurationKey.SIGN_UP_REQUEST_SETTINGS,
+      ConfigurationKey.REJECTION_SETTINGS,
     );
     return config?.data
       ? new RejectionSettings(config.data as RejectionSettings)
