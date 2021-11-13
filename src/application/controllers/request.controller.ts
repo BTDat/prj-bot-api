@@ -13,6 +13,7 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
+import { IllegalArgumentError } from '../../domain/errors/illegal-argument.error';
 import {Account, Role} from '../../domain/models/account.model';
 import {
   Request,
@@ -21,6 +22,7 @@ import {
   SignupRequest,
 } from '../../domain/models/request.model';
 import {RequestFactory} from '../../domain/services/request-factory.service';
+import { AccountRepository } from '../../infrastructure/repositories';
 import {RequestRepository} from '../../infrastructure/repositories/request.repository';
 import {NodeMailerMailService} from '../../infrastructure/services/nodemailer.service';
 import {AccountCreationService} from '../services/account-creation.service';
@@ -33,6 +35,9 @@ export class RequestController {
   constructor(
     @repository(RequestRepository)
     private requestRepository: RequestRepository,
+
+    @repository(AccountRepository)
+    private accountRepository: AccountRepository,
 
     @service(RequestFactory)
     private requestFactory: RequestFactory,
@@ -80,12 +85,26 @@ export class RequestController {
     })
     values: Omit<Request, 'id' | 'createdAt' | 'updatedAt' | 'status'>,
   ): Promise<Request> {
-    const newRequest = await this.requestFactory.buildRequest(values);
-    const result = await this.requestRepository.create(newRequest);
-    const {type, data} = result;
+    let result = {} as Request
+    const {type} = values;
     switch (type) {
       case RequestType.SIGN_UP: {
-        this.sendSignupRequestEmail(result.id, data);
+        const {data: {email, username}} = values
+        const emailExisted = await this.accountRepository.emailRegistered(
+          email,
+        );
+        if (emailExisted) {
+          throw new IllegalArgumentError('email_registered');
+        }
+        const usernameExisted = await this.accountRepository.usernameRegistered(
+          username,
+        );
+        if (usernameExisted) {
+          throw new IllegalArgumentError('username_registered');
+        }
+        const newRequest = await this.requestFactory.buildRequest(values);
+        result = await this.requestRepository.create(newRequest);
+        this.sendSignupRequestEmail(result.id, result.data);
         break;
       }
       default: {
