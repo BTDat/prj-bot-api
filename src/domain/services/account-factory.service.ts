@@ -41,15 +41,37 @@ export class AccountFactory {
       Account,
       'email' | 'password' | 'username'
     >,
-  ): Promise<RawAccount> {
-    return this.buildAccount(
-      new Account({
-        ...values,
-        role: Role.ROOT_ADMIN,
-        status: AccountStatus.ACTIVE,
-        emailVerified: true,
-      }),
+  ): Promise<Account> {
+    const isValid = this.accountRepository.isUserNameValid(values.username);
+    if (!isValid) {
+      throw new IllegalArgumentError('invalid_username');
+    }
+    const emailExisted = await this.accountRepository.emailRegistered(
+      values.email,
     );
+
+    const usernameExisted = await this.accountRepository.usernameRegistered(
+      values.username,
+    );
+
+    if (emailExisted) {
+      throw new IllegalArgumentError('email_registered');
+    }
+
+    if (usernameExisted) {
+      throw new IllegalArgumentError('username_registered');
+    }
+
+    const hashedPassword = await this.passwordHasher.hashPassword(
+      values.password,
+    );
+    return new Account({
+      ...values,
+      role: Role.ROOT_ADMIN,
+      status: AccountStatus.ACTIVE,
+      emailVerified: true,
+      password: hashedPassword,
+    })
   }
 
   public async buildAccount(
