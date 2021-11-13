@@ -3,4 +3,5 @@ export interface AppConfig {
   frontEndBaseUrl: string;
   systemInitializationPassword: string;
   jwtSecret: string;
+  adminEmail: string;
 }

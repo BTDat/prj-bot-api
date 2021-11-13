@@ -1,6 +1,5 @@
 import {model, property, Entity, belongsTo} from '@loopback/repository';
 import {Account} from './account.model';
-import {ProfitRate} from './profit-rate.model';
 
 @model({
   settings: {
@@ -17,16 +16,13 @@ export class Receipt extends Entity {
   })
   id: number;
 
-  @belongsTo(
-    () => ProfitRate,
-    {},
-    {
-      postgresql: {
-        columnName: 'profitRateId',
-      },
+  @property({
+    type: 'number',
+    postgresql: {
+      dataType: 'double precision',
     },
-  )
-  profitRateId: number;
+  })
+  profitRate: number;
 
   @belongsTo(
     () => Account,

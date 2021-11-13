@@ -41,6 +41,7 @@ import {
 } from '../services/local-authentication.service';
 import {AccountFactory} from '../../domain/services/account-factory.service';
 import {AccountSendMailFactory} from '../services/account-send-mail-factory.service';
+import {AccountCreationService} from '../services/account-creation.service';
 
 export class AccountController {
   constructor(
@@ -59,6 +60,9 @@ export class AccountController {
     @service(AccountService)
     private accountService: AccountService,
 
+    @service(AccountCreationService)
+    private accountCreationService: AccountCreationService,
+
     @service(AccountSendMailFactory)
     private accountSendMailFactory: AccountSendMailFactory,
 
@@ -75,8 +79,6 @@ export class AccountController {
   // private frontEndBaseUrl: string,
   {}
 
-  @authenticate('jwt')
-  @authorize({allowedRoles: [Role.ROOT_ADMIN]})
   @post('/accounts', {
     responses: {
       '200': {
@@ -87,6 +89,8 @@ export class AccountController {
       },
     },
   })
+  @authenticate('jwt')
+  @authorize({allowedRoles: [AUTHENTICATED, Role.ROOT_ADMIN]})
   async create(
     @requestBody({
       content: {
@@ -96,7 +100,6 @@ export class AccountController {
               'id',
               'createdAt',
               'updatedAt',
-              'password',
               'role',
               'status',
               'emailVerified',
@@ -107,23 +110,17 @@ export class AccountController {
       },
     })
     values: {
-      profitRateId: number;
+      profitRate: number;
       username: string;
+      password: string;
       email: string;
       firstName: string;
       lastName: string;
     },
   ): Promise<Account> {
-    const account = await this.accountFactory.buildAccount(values);
-    const result = await this.accountRepository.create(account);
-
-    this.sendAccountVerificationEmail(account);
-
-    return result;
+    return this.accountCreationService.createAccount(values);
   }
 
-  @authenticate('jwt')
-  @authorize({allowedRoles: [Role.ROOT_ADMIN]})
   @get('/accounts/count', {
     responses: {
       '200': {
@@ -132,6 +129,8 @@ export class AccountController {
       },
     },
   })
+  @authenticate('jwt')
+  @authorize({allowedRoles: [AUTHENTICATED]})
   async count(
     @param.query.object('where', getWhereSchemaFor(Account))
     where?: Where<Account>,
@@ -152,7 +151,7 @@ export class AccountController {
     },
   })
   @authenticate('jwt')
-  @authorize({allowedRoles: [Role.ROOT_ADMIN]})
+  @authorize({allowedRoles: [AUTHENTICATED, Role.ROOT_ADMIN]})
   async find(
     @param.query.object('filter', getFilterSchemaFor(Account))
     filter?: Filter<Account>,
@@ -189,7 +188,7 @@ export class AccountController {
     },
   })
   @authenticate('jwt')
-  @authorize({allowedRoles: [AUTHENTICATED]})
+  @authorize({allowedRoles: [AUTHENTICATED, Role.ROOT_ADMIN]})
   async updateById(
     @param.path.number('id') id: number,
     @requestBody({
@@ -216,7 +215,7 @@ export class AccountController {
     },
   })
   @authenticate('jwt')
-  @authorize({allowedRoles: [AUTHENTICATED]})
+  @authorize({allowedRoles: [AUTHENTICATED, Role.ROOT_ADMIN]})
   async replaceById(
     @param.path.string('id') id: number,
     @requestBody() user: Account,
@@ -281,46 +280,46 @@ export class AccountController {
     return {token};
   }
 
-  @post('/accounts/signup', {
-    responses: {
-      '200': {
-        description: 'Token',
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              properties: {
-                token: {
-                  type: 'string',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  async signup(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRefExtended(Account, {
-            include: ['email', 'password', 'firstName', 'lastName'],
-            title: 'Account.SignUp',
-          }),
-        },
-      },
-    })
-    values: Pick<Account, 'email' | 'password' | 'firstName' | 'lastName'>,
-  ): Promise<Account> {
-    let account = await this.accountFactory.buildUserAccount(values);
-    account = await this.accountRepository.create(account);
+  // @post('/accounts/signup', {
+  //   responses: {
+  //     '200': {
+  //       description: 'Token',
+  //       content: {
+  //         'application/json': {
+  //           schema: {
+  //             type: 'object',
+  //             properties: {
+  //               token: {
+  //                 type: 'string',
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  // })
+  // async signup(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRefExtended(Account, {
+  //           include: ['email', 'password', 'firstName', 'lastName'],
+  //           title: 'Account.SignUp',
+  //         }),
+  //       },
+  //     },
+  //   })
+  //   values: Pick<Account, 'email' | 'password' | 'firstName' | 'lastName'>,
+  // ): Promise<Account> {
+  //   let account = await this.accountFactory.buildUserAccount(values);
+  //   account = await this.accountRepository.create(account);
 
-    // No need to wait for email sending.
-    this.sendAccountVerificationEmail(account);
+  //   // No need to wait for email sending.
+  //   this.sendAccountVerificationEmail(account);
 
-    return account;
-  }
+  //   return account;
+  // }
 
   @post('/accounts/send-reset-password-email', {
     responses: {
@@ -409,7 +408,6 @@ export class AccountController {
       body.accountId,
       body.resetPasswordToken,
     );
-
     await this.accountService.setNewPassword(account, body.newPassword);
     await this.accountRepository.save(account);
   }
@@ -429,7 +427,7 @@ export class AccountController {
     },
   })
   @authenticate('jwt')
-  @authorize({allowedRoles: [AUTHENTICATED]})
+  @authorize({allowedRoles: [AUTHENTICATED, Role.ROOT_ADMIN]})
   async changePassword(
     @requestBody({
       content: {
@@ -511,6 +509,22 @@ export class AccountController {
 
     account.verify();
     await this.accountRepository.save(account);
+  }
+
+  @post('/accounts/me/resend-verification-email', {
+    responses: {
+      '204': {description: 'Resend verification email'},
+    },
+  })
+  @authenticate('jwt')
+  @authorize({allowedRoles: [AUTHENTICATED]})
+  async resendVerificationEmail(): Promise<void> {
+    const accountId = parseInt(this.currentAuthUserProfile[securityId]);
+    const account = await this.accountRepository.findById(accountId);
+    if (!account) {
+      throw new HttpErrors.BadRequest('account_not_exist');
+    }
+    await this.sendAccountVerificationEmail(account);
   }
 
   private async sendAccountVerificationEmail(account: Account): Promise<void> {

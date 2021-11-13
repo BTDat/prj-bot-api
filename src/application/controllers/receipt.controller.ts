@@ -12,7 +12,6 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
-import {ProfitRate} from '../../domain/models/profit-rate.model';
 import {Receipt} from '../../domain/models/receipt.model';
 import {ReceiptFactory} from '../../domain/services/receipt-factory.service';
 import {ReceiptRepository} from '../../infrastructure/repositories/receipt.repository';
@@ -95,10 +94,10 @@ export class ReceiptController {
   @get('/{id}', {
     responses: {
       '200': {
-        description: 'Object of profit rate',
+        description: 'Object of receipt',
         content: {
           'application/json': {
-            schema: getModelSchemaRef(ProfitRate),
+            schema: getModelSchemaRef(Receipt),
           },
         },
       },

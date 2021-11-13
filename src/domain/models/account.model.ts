@@ -1,9 +1,8 @@
-import {model, property, Entity, belongsTo} from '@loopback/repository';
+import {model, property, Entity} from '@loopback/repository';
 import {
   assertStateFalse,
   assertStateTrue,
 } from '../helpers/assertion-concern.helper';
-import {ProfitRate} from './profit-rate.model';
 
 export namespace AccountConstraint {
   export const PASSWORD_MIN_LENGTH = 6;
@@ -18,6 +17,11 @@ export enum Role {
 export enum AccountStatus {
   INACTIVE = 'inactive',
   ACTIVE = 'active',
+}
+
+export interface RawAccount {
+  password: string;
+  account: Account;
 }
 
 @model({
@@ -43,16 +47,13 @@ export class Account extends Entity {
   })
   id: number;
 
-  @belongsTo(
-    () => ProfitRate,
-    {},
-    {
-      postgresql: {
-        columnName: 'profitRateId',
-      },
+  @property({
+    type: 'number',
+    postgresql: {
+      dataType: 'double precision',
     },
-  )
-  profitRateId: number;
+  })
+  profitRate: number;
 
   @property({
     type: 'string',

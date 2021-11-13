@@ -7,6 +7,7 @@ import {ConfigurationRepository} from '../../infrastructure/repositories';
 import {AccountTokenService} from './account-token.service';
 import {ConfigBindings} from '../../keys';
 import {Email} from '../../infrastructure/services/nodemailer.service';
+import {SignupRequest} from '../../domain/models/request.model';
 
 @bind()
 export class AccountSendMailFactory {
@@ -22,7 +23,96 @@ export class AccountSendMailFactory {
       propertyPath: 'frontEndBaseUrl',
     })
     private frontEndBaseUrl: string,
+
+    @config({
+      fromBinding: ConfigBindings.APP_CONFIG,
+      propertyPath: 'adminEmail',
+    })
+    private adminEmail: string,
   ) {}
+
+  public async buildNewAccountCreationEmail(
+    account: Account,
+    password: string,
+  ): Promise<Email> {
+    if (!account.canVerifyEmail()) {
+      throw new HttpErrors.Forbidden('invalid_account');
+    }
+
+    const {email, username} = account;
+
+    const emailSettings =
+      await this.configurationRepository.getNewAccountCreationEmailSettings();
+
+    if (!emailSettings) {
+      throw new Error('email_settings_not_found');
+    }
+
+    const token =
+      this.accountTokenService.generateAccountVerificationToken(account);
+    const link = `${this.frontEndBaseUrl}/verify-account?token=${token}`;
+
+    const emailContent = emailSettings.composeEmailContent({
+      verificationLink: link,
+      email,
+      username,
+      password,
+    });
+
+    return {
+      subject: emailSettings.subject,
+      senderEmail: emailSettings.senderEmail,
+      senderName: emailSettings.senderName,
+      content: emailContent,
+      recipient: account.email,
+    };
+  }
+
+  public async buildSignUpRequestEmail(
+    requestId: number,
+    data: SignupRequest,
+  ): Promise<Email> {
+    const emailSettings =
+      await this.configurationRepository.getSignUpRequestEmailSettings();
+
+    if (!emailSettings) {
+      throw new Error('email_settings_not_found');
+    }
+
+    const link = `${this.frontEndBaseUrl}/request/${requestId}`;
+
+    const emailContent = emailSettings.composeEmailContent({
+      data,
+      signUpRequestLink: link,
+    });
+
+    return {
+      subject: emailSettings.subject,
+      senderEmail: emailSettings.senderEmail,
+      senderName: emailSettings.senderName,
+      content: emailContent,
+      recipient: this.adminEmail,
+    };
+  }
+
+  public async buildRejectionEmail(recipient: string): Promise<Email> {
+    const emailSettings =
+      await this.configurationRepository.getRejectionEmailSettings();
+
+    if (!emailSettings) {
+      throw new Error('email_settings_not_found');
+    }
+
+    const emailContent = emailSettings.composeEmailContent();
+
+    return {
+      subject: emailSettings.subject,
+      senderEmail: emailSettings.senderEmail,
+      senderName: emailSettings.senderName,
+      content: emailContent,
+      recipient,
+    };
+  }
 
   public async buildAccountVerificationEmail(account: Account): Promise<Email> {
     if (!account.canVerifyEmail()) {

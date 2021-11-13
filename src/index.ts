@@ -46,6 +46,7 @@ if (require.main === module) {
       frontEndBaseUrl: process.env.FRONTEND_BASE_URL,
       systemInitializationPassword: process.env.SYSTEM_INITIALIZATION_PASSWORD,
       jwtSecret: process.env.JWT_SECRET,
+      adminEmail: process.env.ADMIN_EMAIL,
     },
     infraConfig: {
       dbUrl: process.env.DB_URL,

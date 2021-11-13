@@ -1,10 +1,14 @@
 import {repository} from '@loopback/repository';
 import {bind, inject} from '@loopback/context';
-import {Account, AccountStatus, Role} from '../models/account.model';
+import {
+  Account,
+  AccountStatus,
+  RawAccount,
+  Role,
+} from '../models/account.model';
 import {AccountRepository} from '../repositories/account.repository';
 import {PasswordHasher} from './password-hasher.service';
 import {IllegalArgumentError} from '../errors/illegal-argument.error';
-import {getRandomString} from '../helpers/random-string';
 
 @bind()
 export class AccountFactory {
@@ -17,8 +21,11 @@ export class AccountFactory {
   ) {}
 
   public async buildUserAccount(
-    values: Pick<Account, 'email' | 'password' | 'firstName' | 'lastName'>,
-  ): Promise<Account> {
+    values: Pick<
+      Account,
+      'email' | 'password' | 'firstName' | 'lastName' | 'profitRate'
+    >,
+  ): Promise<RawAccount> {
     return this.buildAccount(
       new Account({
         ...values,
@@ -34,7 +41,7 @@ export class AccountFactory {
       Account,
       'email' | 'password' | 'firstName' | 'lastName' | 'username'
     >,
-  ): Promise<Account> {
+  ): Promise<RawAccount> {
     return this.buildAccount(
       new Account({
         ...values,
@@ -48,9 +55,14 @@ export class AccountFactory {
   public async buildAccount(
     values: Pick<
       Account,
-      'email' | 'username' | 'firstName' | 'lastName' | 'profitRateId'
+      | 'email'
+      | 'username'
+      | 'firstName'
+      | 'lastName'
+      | 'profitRate'
+      | 'password'
     >,
-  ): Promise<Account> {
+  ): Promise<RawAccount> {
     const isValid = this.accountRepository.isUserNameValid(values.username);
     if (!isValid) {
       throw new IllegalArgumentError('invalid_username');
@@ -71,14 +83,19 @@ export class AccountFactory {
       throw new IllegalArgumentError('username_registered');
     }
 
-    const password = getRandomString(6);
+    const hashedPassword = await this.passwordHasher.hashPassword(
+      values.password,
+    );
 
-    const hashedPassword = await this.passwordHasher.hashPassword(password);
-    return new Account({
+    const newAccount = new Account({
       ...values,
       password: hashedPassword,
       status: AccountStatus.ACTIVE,
       role: Role.USER,
     });
+    return {
+      password: values.password,
+      account: newAccount,
+    };
   }
 }
