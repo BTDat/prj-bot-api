@@ -20,7 +20,7 @@
   {
     "id": "SIGN_UP_REQUEST_SETTINGS",
     "data": {
-      "emailTemplate": "<h2>New account registration request</h2><br><h4>You have received an offer to register a new account</h4>Username: <%=SIGN_UP_REQUEST_USERNAME%><br>Email: <%=SIGN_UP_REQUEST_Email%><br>First Name: <%=SIGN_UP_REQUEST_FIRSTNAME%><br><br>Last Name: <%=SIGN_UP_REQUEST_LASTNAME%><br><br>Description: <%=SIGN_UP_REQUEST_DESCRIPTION%><br><br>New request here:<br><%=SIGN_UP_REQUEST_LINK%>",
+      "emailTemplate": "<h2>New account registration request</h2><br><h4>You have received an offer to register a new account</h4>Username: <%=SIGN_UP_REQUEST_USERNAME%><br>Email: <%=SIGN_UP_REQUEST_EMAIL%><br>First Name: <%=SIGN_UP_REQUEST_FIRSTNAME%><br><br>Last Name: <%=SIGN_UP_REQUEST_LASTNAME%><br><br>Description: <%=SIGN_UP_REQUEST_DESCRIPTION%><br><br>New request here:<br><%=SIGN_UP_REQUEST_LINK%>",
       "subject": "New Account Request",
       "senderEmail": "btandat23@gmail.com",
       "senderName": "noreply"
