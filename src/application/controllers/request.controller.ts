@@ -13,7 +13,7 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
-import { IllegalArgumentError } from '../../domain/errors/illegal-argument.error';
+import {IllegalArgumentError} from '../../domain/errors/illegal-argument.error';
 import {Account, Role} from '../../domain/models/account.model';
 import {
   Request,
@@ -22,7 +22,7 @@ import {
   SignupRequest,
 } from '../../domain/models/request.model';
 import {RequestFactory} from '../../domain/services/request-factory.service';
-import { AccountRepository } from '../../infrastructure/repositories';
+import {AccountRepository} from '../../infrastructure/repositories';
 import {RequestRepository} from '../../infrastructure/repositories/request.repository';
 import {NodeMailerMailService} from '../../infrastructure/services/nodemailer.service';
 import {AccountCreationService} from '../services/account-creation.service';
@@ -85,11 +85,13 @@ export class RequestController {
     })
     values: Omit<Request, 'id' | 'createdAt' | 'updatedAt' | 'status'>,
   ): Promise<Request> {
-    let result = {} as Request
+    let result = {} as Request;
     const {type} = values;
     switch (type) {
       case RequestType.SIGN_UP: {
-        const {data: {email, username}} = values
+        const {
+          data: {email, username},
+        } = values;
         const emailExisted = await this.accountRepository.emailRegistered(
           email,
         );
@@ -169,8 +171,8 @@ export class RequestController {
             schema: {
               type: 'object',
               properties: {
-                success: {type: 'boolean'}
-              }
+                success: {type: 'boolean'},
+              },
             },
           },
         },
@@ -179,24 +181,26 @@ export class RequestController {
   })
   @authenticate('jwt')
   @authorize({allowedRoles: [AUTHENTICATED, Role.ROOT_ADMIN]})
-  async rejectRequest(@param.path.number('id') id: number): Promise<{success: boolean}> {
+  async rejectRequest(
+    @param.path.number('id') id: number,
+  ): Promise<{success: boolean}> {
     const request = await this.requestRepository.findOne({
       where: {
         id,
-        status: RequestStatus.PENDING
-      }
+        status: RequestStatus.PENDING,
+      },
     });
     if (!request) {
       throw new HttpErrors.BadRequest('request_does_not_exist');
     }
     await this.requestRepository.updateById(id, {
       status: RequestStatus.DENIED,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
-    this.sendRejectionEmail(request.data.email)
+    this.sendRejectionEmail(request.data.email);
     return {
-      success: true
-    }
+      success: true,
+    };
   }
 
   @post('/{id}/accept', {
@@ -222,7 +226,7 @@ export class RequestController {
             type: 'object',
             properties: {
               profitRate: {type: 'number'},
-              password: {type: 'string'}
+              password: {type: 'string'},
             },
           },
         },
@@ -236,8 +240,8 @@ export class RequestController {
     const request = await this.requestRepository.findOne({
       where: {
         id,
-        status: RequestStatus.PENDING
-      }
+        status: RequestStatus.PENDING,
+      },
     });
     if (!request) {
       throw new HttpErrors.BadRequest('request_does_not_exist');
@@ -245,14 +249,19 @@ export class RequestController {
     const {
       data: {email, username, firstName, lastName},
     } = request;
-    const {profitRate, password} = values
+    const {profitRate, password} = values;
     const result = await this.accountCreationService.createAccount({
-      email, username, firstName, lastName, profitRate, password
-    })
-    
+      email,
+      username,
+      firstName,
+      lastName,
+      profitRate,
+      password,
+    });
+
     await this.requestRepository.updateById(id, {
       status: RequestStatus.SUCCESS,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
     return result;
   }

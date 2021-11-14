@@ -30,9 +30,7 @@ export class ConfigurationRepository extends TimestampRepositoryMixin<
   public async getRejectionEmailSettings(): Promise<
     RejectionSettings | undefined
   > {
-    const config = await this.findById(
-      ConfigurationKey.REJECTION_SETTINGS,
-    );
+    const config = await this.findById(ConfigurationKey.REJECTION_SETTINGS);
     return config?.data
       ? new RejectionSettings(config.data as RejectionSettings)
       : undefined;

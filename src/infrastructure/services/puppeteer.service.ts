@@ -3,12 +3,16 @@ import {bind} from '@loopback/context';
 import puppeteer from 'puppeteer';
 import isNull from 'lodash/isNull';
 import {HttpErrors} from '@loopback/rest';
+import {BotRequestBody} from '../../domain/models/bot.model';
+import {Account} from '../../domain/models/account.model';
 
 @bind()
 export class PuppeteerService {
   constructor() {}
 
-  public async run(): Promise<void> {
+  public async run(values: BotRequestBody, account: Account): Promise<void> {
+    const {betLevel, password, username} = values;
+    const {profitRate} = account;
     const browser = await puppeteer.launch({
       headless: false,
       executablePath:
@@ -17,56 +21,14 @@ export class PuppeteerService {
     });
     const page = await browser.newPage();
 
-    await page.goto('https://studio.evolutiongaming.com/', {timeout: 0});
+    await page.goto('https://studio.evolutiongaming.com/', {
+      timeout: 0,
+      waitUntil: 'networkidle2',
+    });
 
-    // const [loginButton] = await page.$x('//span[contains(text(),"Log in")]')
-    // loginButton.click()
+    await this.botLogin(page, {username, password});
 
-    // await page.waitForNavigation();
-
-    await page.type('input[name="username"]', 'TestTest', {delay: 50});
-    await page.type('input[name="password"]', 'test12345', {delay: 50});
-
-    const loginButtonSelector = 'input[value="Log in"]';
-
-    await page.waitForSelector(loginButtonSelector);
-
-    await page.evaluate(
-      selector => document.querySelector(selector).click(),
-      loginButtonSelector,
-    );
-
-    await page.waitForNavigation();
-
-    const bacaratSelector = 'a[href="/entry?category=baccarat"]';
-
-    await page.waitForSelector(bacaratSelector);
-
-    await page.evaluate(
-      selector => document.querySelector(selector).click(),
-      bacaratSelector,
-    );
-
-    await page.waitForNavigation();
-
-    const speedBacaratSelector = 'div[data-tableid="leqhceumaq6qfoug"] > div';
-
-    await page.waitForSelector(speedBacaratSelector);
-
-    await page.evaluate(
-      selector => document.querySelector(selector).click(),
-      speedBacaratSelector,
-    );
-
-    await page.waitForNavigation();
-
-    const viewButtonSelector = 'button[data-role="video-button"]';
-
-    await page.waitForSelector(viewButtonSelector);
-
-    await page.waitForTimeout(3000);
-
-    await page.click(viewButtonSelector);
+    await this.chooseCategory(page);
 
     const statusSelector = 'div[data-role="status-text"]';
     const balanceSelector = 'span[data-role="balance-label__value"]';
@@ -82,16 +44,14 @@ export class PuppeteerService {
       throw new HttpErrors.BadRequest('error_balance');
     }
     const expectBalance =
-      parseFloat(currentBalance.replace(/,/g, '')) * 0.00005 +
+      parseFloat(currentBalance.replace(/,/g, '')) * profitRate +
       parseFloat(currentBalance.replace(/,/g, ''));
-
-    console.log({expectBalance});
 
     let data = await page.$eval(statusSelector, el => el.textContent);
 
     for (;;) {
       if (data === 'PLACE YOUR BETS 12') {
-        await page.click('div[data-value="2"]');
+        await page.click(`div[data-value="${betLevel}"]`);
         break;
       }
       data = await page.$eval(statusSelector, el => el.textContent);
@@ -127,8 +87,6 @@ export class PuppeteerService {
           if (!currentBalance) {
             throw new HttpErrors.BadRequest('error_balance');
           }
-          console.log({currentBalance});
-
           if (betObject[betPositon] === 'bet-spot-player') {
             win = true;
             if (parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance) {
@@ -149,8 +107,6 @@ export class PuppeteerService {
           if (!currentBalance) {
             throw new HttpErrors.BadRequest('error_balance');
           }
-          console.log({currentBalance});
-
           if (betObject[betPositon] === 'bet-spot-banker') {
             win = true;
             if (parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance) {
@@ -179,7 +135,7 @@ export class PuppeteerService {
             }
             if (isNull(win) || win) {
               if (defaultBetAmount !== betAmount) {
-                await page.click('div[data-value="2"]');
+                await page.click(`div[data-value="${betLevel}"]`);
                 betAmount = defaultBetAmount;
               }
               await page.click(`div[data-role="${betObject[betPositon]}"]`);
@@ -227,5 +183,57 @@ export class PuppeteerService {
     // }
 
     // await browser.close();
+  }
+
+  private async botLogin(
+    page: puppeteer.Page,
+    values: {username: string; password: string},
+  ): Promise<void> {
+    const {username, password} = values;
+    await page.type('input[name="username"]', username, {delay: 50});
+    await page.type('input[name="password"]', password, {delay: 50});
+
+    const loginButtonSelector = 'input[value="Log in"]';
+
+    await page.waitForSelector(loginButtonSelector);
+
+    await page.evaluate(
+      selector => document.querySelector(selector).click(),
+      loginButtonSelector,
+    );
+
+    await page.waitForNavigation();
+  }
+
+  private async chooseCategory(page: puppeteer.Page): Promise<void> {
+    const bacaratSelector = 'a[href="/entry?category=baccarat"]';
+
+    await page.waitForSelector(bacaratSelector);
+
+    await page.evaluate(
+      selector => document.querySelector(selector).click(),
+      bacaratSelector,
+    );
+
+    await page.waitForNavigation();
+
+    const speedBacaratSelector = 'div[data-tableid="leqhceumaq6qfoug"] > div';
+
+    await page.waitForSelector(speedBacaratSelector);
+
+    await page.evaluate(
+      selector => document.querySelector(selector).click(),
+      speedBacaratSelector,
+    );
+
+    await page.waitForNavigation();
+
+    const viewButtonSelector = 'button[data-role="video-button"]';
+
+    await page.waitForSelector(viewButtonSelector);
+
+    await page.waitForTimeout(3000);
+
+    await page.click(viewButtonSelector);
   }
 }

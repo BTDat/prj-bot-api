@@ -37,10 +37,7 @@ export class AccountFactory {
   }
 
   public async buildAdminAccount(
-    values: Pick<
-      Account,
-      'email' | 'password' | 'username'
-    >,
+    values: Pick<Account, 'email' | 'password' | 'username'>,
   ): Promise<Account> {
     const isValid = this.accountRepository.isUserNameValid(values.username);
     if (!isValid) {
@@ -71,7 +68,7 @@ export class AccountFactory {
       status: AccountStatus.ACTIVE,
       emailVerified: true,
       password: hashedPassword,
-    })
+    });
   }
 
   public async buildAccount(

@@ -73,9 +73,8 @@ export class AccountController {
     private authenticationService: LocalAuthenticationService,
 
     @inject(SecurityBindings.USER, {optional: true})
-    private currentAuthUserProfile: UserProfile, // @config({ //   fromBinding: ConfigBindings.APP_CONFIG,
-  ) //   propertyPath: 'frontEndBaseUrl',
-  // })
+    private currentAuthUserProfile: UserProfile, // @config({ //   fromBinding: ConfigBindings.APP_CONFIG, //   propertyPath: 'frontEndBaseUrl',
+  ) // })
   // private frontEndBaseUrl: string,
   {}
 
@@ -119,6 +118,23 @@ export class AccountController {
     },
   ): Promise<Account> {
     return this.accountCreationService.createAccount(values);
+  }
+
+  @get('/accounts/me', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: {
+          'application/json': {schema: getModelSchemaRef(Account)},
+        },
+      },
+    },
+  })
+  @authenticate('jwt')
+  @authorize({allowedRoles: [AUTHENTICATED]})
+  async findMe(): Promise<Account> {
+    const accountId = parseInt(this.currentAuthUserProfile[securityId]);
+    return this.accountRepository.findById(accountId);
   }
 
   @get('/accounts/count', {
@@ -262,7 +278,7 @@ export class AccountController {
           schema: {
             type: 'object',
             properties: {
-              usernameOrEmail: {type: 'string'},
+              emailOrUsername: {type: 'string'},
               password: {type: 'string'},
             },
           },
