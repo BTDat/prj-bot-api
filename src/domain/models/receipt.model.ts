@@ -54,12 +54,29 @@ export class Receipt extends Entity {
   profit: number;
 
   @property({
+    type: 'number',
+    default: 0,
+    postgresql: {
+      columnName: 'numberOfConsecutiveLosses',
+    },
+  })
+  numberOfConsecutiveLosses: number;
+
+  @property({
     type: 'date',
     postgresql: {
       columnName: 'createdAt',
     },
   })
   createdAt: Date;
+
+  @property({
+    type: 'date',
+    postgresql: {
+      columnName: 'updatedAt',
+    },
+  })
+  updatedAt: Date;
 
   constructor(data?: Partial<Receipt>) {
     super(data);

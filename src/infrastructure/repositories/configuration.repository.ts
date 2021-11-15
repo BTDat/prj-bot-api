@@ -4,6 +4,7 @@ import {Constructor} from '@loopback/context';
 import {
   Configuration,
   ConfigurationKey,
+  InvoiceSettings,
   NewAccountSettings,
   RejectionSettings,
   ResetPasswordSettings,
@@ -25,6 +26,13 @@ export class ConfigurationRepository extends TimestampRepositoryMixin<
     dataSource: juggler.DataSource,
   ) {
     super(Configuration, dataSource);
+  }
+
+  public async getInvoiceEmailSettings(): Promise<InvoiceSettings | undefined> {
+    const config = await this.findById(ConfigurationKey.INVOICE_SETTINGS);
+    return config?.data
+      ? new InvoiceSettings(config.data as InvoiceSettings)
+      : undefined;
   }
 
   public async getRejectionEmailSettings(): Promise<

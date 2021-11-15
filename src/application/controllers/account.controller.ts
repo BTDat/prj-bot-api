@@ -73,9 +73,8 @@ export class AccountController {
     private authenticationService: LocalAuthenticationService,
 
     @inject(SecurityBindings.USER, {optional: true})
-    private currentAuthUserProfile: UserProfile, // @config({ //   fromBinding: ConfigBindings.APP_CONFIG, //   propertyPath: 'frontEndBaseUrl',
-  ) // })
-  // private frontEndBaseUrl: string,
+    private currentAuthUserProfile: UserProfile, // @config({ //   fromBinding: ConfigBindings.APP_CONFIG, //   propertyPath: 'frontEndBaseUrl', // })
+  ) // private frontEndBaseUrl: string,
   {}
 
   @post('/accounts', {

@@ -1,5 +1,6 @@
 import {model, property, Entity} from '@loopback/repository';
 import * as ejs from 'ejs';
+import {Receipt} from './receipt.model';
 import {SignupRequest} from './request.model';
 
 export namespace SystemStatus {
@@ -112,6 +113,44 @@ export class RejectionSettings extends EmailSettings<RejectionVariables> {
   }
 }
 
+interface InvoiceVariables {
+  receipt: Receipt;
+}
+export class InvoiceSettings extends EmailSettings<InvoiceVariables> {
+  private static InvoiceProfitRate = 'INVOICE_PROFIT_RATE';
+  private static InvoiceBalance = 'INVOICE_BALANCE';
+  private static InvoiceProfit = 'INVOICE_PROFIT';
+  private static InvoiceDate = 'INVOICE_DATE';
+  private static InvoiceCount = 'INVOICE_COUNT';
+
+  constructor(options: EmailSettingData) {
+    super(options);
+  }
+
+  public composeEmailContent(values: InvoiceVariables): string {
+    const {
+      receipt: {
+        balance,
+        profit,
+        profitRate,
+        createdAt,
+        numberOfConsecutiveLosses,
+      },
+    } = values;
+    return ejs.render(this.emailTemplate, {
+      [InvoiceSettings.InvoiceBalance]: balance,
+      [InvoiceSettings.InvoiceDate]: createdAt,
+      [InvoiceSettings.InvoiceProfit]: profit,
+      [InvoiceSettings.InvoiceProfitRate]: profitRate,
+      [InvoiceSettings.InvoiceCount]: numberOfConsecutiveLosses,
+    });
+  }
+
+  public validateEmailTemplate(): boolean {
+    return true;
+  }
+}
+
 interface SignUpRequestVariables {
   data: SignupRequest;
   signUpRequestLink: string;
@@ -173,7 +212,8 @@ export type ConfigurationData =
   | ResetPasswordSettings
   | VerifyAccountSettings
   | SignUpRequestSettings
-  | RejectionSettings;
+  | RejectionSettings
+  | InvoiceSettings;
 
 export enum ConfigurationKey {
   SYSTEM_STATUS = 'SYSTEM_STATUS',
@@ -183,6 +223,7 @@ export enum ConfigurationKey {
   NEW_ACCOUNT_SETTINGS = 'NEW_ACCOUNT_SETTINGS',
   SIGN_UP_REQUEST_SETTINGS = 'SIGN_UP_REQUEST_SETTINGS',
   REJECTION_SETTINGS = 'REJECTION_SETTINGS',
+  INVOICE_SETTINGS = 'INVOICE_SETTINGS',
 }
 
 @model({settings: {idInjection: false}})
@@ -200,6 +241,7 @@ export class Configuration extends Entity {
         ConfigurationKey.NEW_ACCOUNT_SETTINGS,
         ConfigurationKey.SIGN_UP_REQUEST_SETTINGS,
         ConfigurationKey.REJECTION_SETTINGS,
+        ConfigurationKey.INVOICE_SETTINGS,
       ],
     },
   })

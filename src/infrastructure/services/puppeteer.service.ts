@@ -5,14 +5,33 @@ import isNull from 'lodash/isNull';
 import {HttpErrors} from '@loopback/rest';
 import {BotRequestBody} from '../../domain/models/bot.model';
 import {Account} from '../../domain/models/account.model';
+import {repository} from '@loopback/repository';
+import {service} from '@loopback/core';
+import {ReceiptRepository} from '../repositories';
+import {ReceiptFactory} from '../../domain/services/receipt-factory.service';
+import {Receipt} from '../../domain/models/receipt.model';
+import {NodeMailerMailService} from './nodemailer.service';
+import {AccountSendMailFactory} from '../../application/services/account-send-mail-factory.service';
 
 @bind()
 export class PuppeteerService {
-  constructor() {}
+  constructor(
+    @repository(ReceiptRepository)
+    private receiptRepository: ReceiptRepository,
+
+    @service(ReceiptFactory)
+    private receiptFactory: ReceiptFactory,
+
+    @service(NodeMailerMailService)
+    private mailService: NodeMailerMailService,
+
+    @service(AccountSendMailFactory)
+    private accountSendMailFactory: AccountSendMailFactory,
+  ) {}
 
   public async run(values: BotRequestBody, account: Account): Promise<void> {
     const {betLevel, password, username} = values;
-    const {profitRate} = account;
+    const {profitRate, email} = account;
     const browser = await puppeteer.launch({
       headless: false,
       executablePath:
@@ -47,6 +66,11 @@ export class PuppeteerService {
       parseFloat(currentBalance.replace(/,/g, '')) * profitRate +
       parseFloat(currentBalance.replace(/,/g, ''));
 
+    console.log({profitRate});
+    console.log({expectBalance});
+
+    const initialBalance = parseFloat(currentBalance.replace(/,/g, ''));
+
     let data = await page.$eval(statusSelector, el => el.textContent);
 
     for (;;) {
@@ -60,6 +84,8 @@ export class PuppeteerService {
     let win: boolean | null = null;
     let tie = false;
     let bet = false;
+    let numberOfConsecutiveLosses = 0;
+    let maxNumberOfConsecutiveLosses = 0;
     const defaultBetAmount = 2;
     let betAmount: number = defaultBetAmount;
     const betObject = [
@@ -89,8 +115,16 @@ export class PuppeteerService {
           }
           if (betObject[betPositon] === 'bet-spot-player') {
             win = true;
+            const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
             if (parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance) {
               clearInterval(playCardInterval);
+              await this.createReceipt(email, {
+                balance: curBalance,
+                profit: curBalance - initialBalance,
+                profitRate,
+                accountId: account.id,
+                numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses - 1,
+              } as Receipt);
             }
           } else {
             win = false;
@@ -109,8 +143,16 @@ export class PuppeteerService {
           }
           if (betObject[betPositon] === 'bet-spot-banker') {
             win = true;
-            if (parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance) {
+            const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
+            if (curBalance >= expectBalance) {
               clearInterval(playCardInterval);
+              await this.createReceipt(email, {
+                balance: curBalance,
+                profit: curBalance - initialBalance,
+                profitRate,
+                accountId: account.id,
+                numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses - 1,
+              } as Receipt);
             }
           } else {
             win = false;
@@ -139,11 +181,15 @@ export class PuppeteerService {
                 betAmount = defaultBetAmount;
               }
               await page.click(`div[data-role="${betObject[betPositon]}"]`);
+              numberOfConsecutiveLosses = 0;
             } else {
+              numberOfConsecutiveLosses++;
+              if (numberOfConsecutiveLosses > maxNumberOfConsecutiveLosses)
+                maxNumberOfConsecutiveLosses = numberOfConsecutiveLosses;
               if (!tie) {
                 betAmount = betAmount * 2;
               }
-              let temp = Math.floor(betAmount / 2);
+              let temp = Math.floor(betAmount / 4);
 
               for (;;) {
                 if (temp === 0) {
@@ -152,6 +198,7 @@ export class PuppeteerService {
                 await page.click(`div[data-role="${betObject[betPositon]}"]`);
                 temp--;
               }
+              await page.click('button[data-role="double-button"]');
             }
           }
           break;
@@ -235,5 +282,25 @@ export class PuppeteerService {
     await page.waitForTimeout(3000);
 
     await page.click(viewButtonSelector);
+  }
+
+  private async sendInvoiceEmail(
+    recipient: string,
+    receipt: Receipt,
+  ): Promise<void> {
+    const email = await this.accountSendMailFactory.buildInvoiceEmail(
+      recipient,
+      receipt,
+    );
+    await this.mailService.send(email);
+  }
+
+  private async createReceipt(
+    recipient: string,
+    receipt: Omit<Receipt, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<void> {
+    const receiptBuilding = await this.receiptFactory.buildReceipt(receipt);
+    const newReceipt = await this.receiptRepository.create(receiptBuilding);
+    this.sendInvoiceEmail(recipient, newReceipt);
   }
 }

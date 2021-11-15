@@ -8,6 +8,7 @@ import {AccountTokenService} from './account-token.service';
 import {ConfigBindings} from '../../keys';
 import {Email} from '../../infrastructure/services/nodemailer.service';
 import {SignupRequest} from '../../domain/models/request.model';
+import {Receipt} from '../../domain/models/receipt.model';
 
 @bind()
 export class AccountSendMailFactory {
@@ -104,6 +105,28 @@ export class AccountSendMailFactory {
     }
 
     const emailContent = emailSettings.composeEmailContent();
+
+    return {
+      subject: emailSettings.subject,
+      senderEmail: emailSettings.senderEmail,
+      senderName: emailSettings.senderName,
+      content: emailContent,
+      recipient,
+    };
+  }
+
+  public async buildInvoiceEmail(
+    recipient: string,
+    receipt: Receipt,
+  ): Promise<Email> {
+    const emailSettings =
+      await this.configurationRepository.getInvoiceEmailSettings();
+
+    if (!emailSettings) {
+      throw new Error('email_settings_not_found');
+    }
+
+    const emailContent = emailSettings.composeEmailContent({receipt});
 
     return {
       subject: emailSettings.subject,

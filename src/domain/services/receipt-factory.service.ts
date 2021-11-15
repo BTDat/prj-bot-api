@@ -6,7 +6,14 @@ export class ReceiptFactory {
   constructor() {}
 
   public async buildReceipt(
-    values: Pick<Receipt, 'accountId' | 'balance' | 'profit' | 'profitRate'>,
+    values: Pick<
+      Receipt,
+      | 'accountId'
+      | 'balance'
+      | 'profit'
+      | 'profitRate'
+      | 'numberOfConsecutiveLosses'
+    >,
   ): Promise<Receipt> {
     return new Receipt({
       ...values,

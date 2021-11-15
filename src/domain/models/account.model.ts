@@ -51,6 +51,7 @@ export class Account extends Entity {
     type: 'number',
     postgresql: {
       dataType: 'double precision',
+      columnName: 'profitRate',
     },
   })
   profitRate: number;

@@ -31,7 +31,7 @@ export class ReceiptController {
   @post('', {
     responses: {
       '200': {
-        description: 'Array of receipts',
+        description: 'New receipts',
         content: {
           'application/json': {
             schema: {
@@ -60,7 +60,7 @@ export class ReceiptController {
         },
       },
     })
-    values: Omit<Receipt, 'id' | 'createdAt'>,
+    values: Omit<Receipt, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<Receipt> {
     const newReceipt = await this.receiptFactory.buildReceipt(values);
     const result = await this.receiptRepository.create(newReceipt);
