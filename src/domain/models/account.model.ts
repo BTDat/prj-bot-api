@@ -3,6 +3,7 @@ import {
   assertStateFalse,
   assertStateTrue,
 } from '../helpers/assertion-concern.helper';
+import {BotStatus} from './bot.model';
 
 export namespace AccountConstraint {
   export const PASSWORD_MIN_LENGTH = 6;
@@ -92,6 +93,15 @@ export class Account extends Entity {
 
   @property({type: 'string'})
   status: AccountStatus;
+
+  @property({
+    type: 'string',
+    default: BotStatus.DEACTIVATE,
+    postgresql: {
+      columnName: 'botStatus',
+    },
+  })
+  botStatus: BotStatus;
 
   @property({
     type: 'string',

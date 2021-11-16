@@ -4,7 +4,7 @@ import {inject, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {api, post, requestBody} from '@loopback/rest';
 import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
-import {BotRequestBody} from '../../domain/models/bot.model';
+import {BotRequestBody, BotStatus} from '../../domain/models/bot.model';
 import {AccountRepository} from '../../infrastructure/repositories';
 import {PuppeteerService} from '../../infrastructure/services/puppeteer.service';
 
@@ -64,7 +64,10 @@ export class BotController {
       const account = await this.accountRepository.findById(
         parseInt(accountId),
       );
-      await this.puppeteerService.run(values, account);
+      await this.accountRepository.updateById(account.id, {
+        botStatus: BotStatus.ACTIVATE,
+      });
+      this.puppeteerService.run(values, account);
     } catch (error) {
       console.log({error});
       return {
