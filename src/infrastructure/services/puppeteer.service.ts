@@ -85,21 +85,14 @@ export class PuppeteerService {
 
       let data = await page.$eval(statusSelector, el => el.textContent);
 
-      for (;;) {
-        if (data === 'PLACE YOUR BETS 12') {
-          await page.click(`div[data-value="${betLevel}"]`);
-          break;
-        }
-        data = await page.$eval(statusSelector, el => el.textContent);
-      }
-
-      let win: boolean | null = null;
-      let tie = false;
-      let bet = false;
-      let numberOfConsecutiveLosses = 0;
-      let maxNumberOfConsecutiveLosses = 0;
-      const defaultBetAmount = 2;
-      let betAmount: number = defaultBetAmount;
+      // const betObject = [
+      //   'bet-spot-banker',
+      //   'bet-spot-banker',
+      //   'bet-spot-banker',
+      //   'bet-spot-player',
+      //   'bet-spot-player',
+      //   'bet-spot-player',
+      // ];
       const betObject = [
         'bet-spot-banker',
         'bet-spot-banker',
@@ -110,6 +103,50 @@ export class PuppeteerService {
         'bet-spot-player',
       ];
       let betPositon = -1;
+      // let lastY: string = '4';
+
+      for (;;) {
+        // const x =  await page.$eval('svg[data-role="Bead-road"] > svg > use[y="2"]', el => el.getAttribute('x'));
+
+        // if(!currentXPositon){
+        // currentXPositon = x;
+
+        // }
+        // try {
+        //   lastY = await page.$eval(
+        //     'svg[data-type="coordinates"]:last-child',
+        //     el => el.getAttribute('data-y'),
+        //   ) ?? '4';
+        // } catch (error) {
+        //   console.log({error});
+        // }
+
+        if (data === 'PLACE YOUR BETS 5') {
+          // if (lastY) {
+          //   if (parseInt(lastY) === betObject.length - 1) {
+          //     betPositon === 0;
+          //   } else {
+          //     betPositon = parseInt(lastY);
+          //   }
+          //   break;
+          // }
+          // if(currentXPositon && currentXPositon !== x){
+          //   break;
+          // }
+          break;
+        }
+
+        data = await page.$eval(statusSelector, el => el.textContent);
+      }
+
+      let win: boolean | null = null;
+      let tie = false;
+      let bet = false;
+      let numberOfConsecutiveLosses = 0;
+      let maxNumberOfConsecutiveLosses = 0;
+      let betAmount: number = betLevel;
+
+      // let newTable = false;
 
       const playCardInterval = setInterval(async () => {
         data = await page.$eval(statusSelector, el => el.textContent);
@@ -118,6 +155,7 @@ export class PuppeteerService {
         }
         switch (data) {
           case 'PLAYER WINS': {
+            // newTable = false;
             currentBalance = await page.$eval(
               balanceSelector,
               el => el.textContent,
@@ -154,6 +192,7 @@ export class PuppeteerService {
             break;
           }
           case 'BANKER WINS': {
+            // newTable = false;
             currentBalance = await page.$eval(
               balanceSelector,
               el => el.textContent,
@@ -194,38 +233,67 @@ export class PuppeteerService {
             break;
           }
           default: {
+            // if (data.includes('PLACE YOUR BET') && !newTable) {
+            //   try {
+            //     const x = await page.$eval('svg[data-type="coordinates"]', el =>
+            //       el.getAttribute('data-x'),
+            //     );
+
+            //   } catch (error) {
+            //     console.log({error});
+
+            //     newTable = true;
+            //     bet = false;
+            //     betPositon = -1;
+            //     await this.undoBet(betAmount,level,page);
+            //   }
+            // }
+
             if (data.includes('PLACE YOUR BET') && !bet) {
-              bet = true;
               if (betPositon !== betObject.length - 1) {
                 betPositon++;
               } else {
                 betPositon = 0;
               }
-              if (isNull(win) || win) {
-                // await page.click(`div[data-value="${betLevel}"]`);
-                await this.bet(betLevel, level, page, betObject[betPositon]);
-                betAmount = defaultBetAmount;
-                // await page.click(`div[data-role="${betObject[betPositon]}"]`);
-                numberOfConsecutiveLosses = 0;
-              } else {
-                numberOfConsecutiveLosses++;
-                if (numberOfConsecutiveLosses > maxNumberOfConsecutiveLosses)
-                  maxNumberOfConsecutiveLosses = numberOfConsecutiveLosses;
-                if (!tie) {
-                  betAmount = betAmount * 2;
-                }
-                // let temp = Math.floor(betAmount / 4);
 
-                // for (;;) {
-                //   if (temp === 0) {
-                //     break;
-                //   }
-                //   await page.click(`div[data-role="${betObject[betPositon]}"]`);
-                //   temp--;
-                // }
-                // await page.waitForSelector(doubleButtonSelector);
-                // await page.click(doubleButtonSelector);
-                await this.bet(betAmount, level, page, betObject[betPositon]);
+              bet = true;
+              try {
+                if (isNull(win) || win) {
+                  // await page.click(`div[data-value="${betLevel}"]`);
+                  await this.bet(betLevel, level, page, betObject[betPositon]);
+                  betAmount = betLevel;
+                  // await page.click(`div[data-role="${betObject[betPositon]}"]`);
+                  numberOfConsecutiveLosses = 0;
+                } else {
+                  if (!tie) {
+                    // if(!newTable){
+                    numberOfConsecutiveLosses++;
+                    betAmount = betAmount * 2;
+                    // }
+                  }
+                  if (
+                    numberOfConsecutiveLosses > maxNumberOfConsecutiveLosses
+                  ) {
+                    maxNumberOfConsecutiveLosses = numberOfConsecutiveLosses;
+                  }
+
+                  // let temp = Math.floor(betAmount / 4);
+
+                  // for (;;) {
+                  //   if (temp === 0) {
+                  //     break;
+                  //   }
+                  //   await page.click(`div[data-role="${betObject[betPositon]}"]`);
+                  //   temp--;
+                  // }
+                  // await page.waitForSelector(doubleButtonSelector);
+                  // await page.click(doubleButtonSelector);
+                  await this.bet(betAmount, level, page, betObject[betPositon]);
+                }
+              } catch (error) {
+                console.log({error});
+
+                bet = false;
               }
             }
             break;
@@ -349,13 +417,25 @@ export class PuppeteerService {
       while (amount >= level[i]) {
         amount -= level[i];
         if (oldLevelValue !== level[i]) {
-          console.log('Chon: ', level[i]);
           await page.click(`div[data-value="${level[i]}"]`);
         }
-        console.log('Đặt: ', betTarget);
-
         await page.click(`div[data-role="${betTarget}"]`);
       }
     }
   }
+
+  // private async undoBet(
+  //   betAmount: number,
+  //   level: number[],
+  //   page: Page,
+  // ): Promise<void> {
+  //   await page.waitForSelector('button[data-role="undo-button"]')
+  //   let amount = betAmount;
+  //   for (let i = level.length - 1; i >= 0; i--) {
+  //     while (amount >= level[i]) {
+  //       amount -= level[i];
+  //       await page.click('button[data-role="undo-button"]');
+  //     }
+  //   }
+  // }
 }
