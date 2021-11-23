@@ -1,3 +1,4 @@
+
 version: '3.9'
 
 services:
@@ -9,7 +10,8 @@ services:
     environment:
       - VIRTUAL_HOST=api.flamingoapp.org
       - VIRTUAL_PORT=3001
-      # - LETSENCRYPT_HOST=api.flamingoapp.org
+      # - CERT_NAME=api.flamingoapp.org
+      - LETSENCRYPT_HOST=api.flamingoapp.org
 
   # web:
   #   build: .
@@ -45,12 +47,23 @@ services:
       - '80:80'
       - '443:443'
     volumes:
-      # - conf:/etc/nginx/conf.d
-      # - vhost:/etc/nginx/vhost.d
-      # - html:/usr/share/nginx/html
-      # - dhparam:/etc/nginx/dhparam
-      # - certs:/etc/nginx/certs:ro
+      - conf:/etc/nginx/conf.d
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - dhparam:/etc/nginx/dhparam
+      - certs:/etc/nginx/certs:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
 
   # redis:
   #   image: redis:latest
@@ -68,13 +81,13 @@ networks:
     external:
       name: flamingoapp
 
-# volumes:
-  # conf:
-  # vhost:
-  # html:
-  # dhparam:
-  # certs:
-  # acme:
+volumes:
+  conf:
+  vhost:
+  html:
+  dhparam:
+  certs:
+  acme:
 
   # nginx:
   #   build:
