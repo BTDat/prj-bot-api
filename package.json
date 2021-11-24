@@ -1,5 +1,5 @@
 {
-  "name": "int-backend-loopback4",
+  "name": "flamingo-bot-api",
   "version": "1.1.0",
   "description": "Backend boilerplate codebase based on Loopback 4 framework",
   "engines": {
