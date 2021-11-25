@@ -43,269 +43,274 @@ export class PuppeteerService {
       });
       const page = await browser.newPage();
 
-      await page.goto('https://studio.evolutiongaming.com/', {
+      await page.goto('https://bitcasino.io/login', {
         timeout: 0,
         waitUntil: 'networkidle2',
       });
+
+      // await page.waitForSelector('span[data-translation="profile.login"]')
+
+      // await page.click('span[data-translation="profile.login"]');
+
 
       await this.botLogin(page, {username, password});
 
       await this.chooseCategory(page);
 
-      const statusSelector = 'div[data-role="status-text"]';
-      const balanceSelector = 'span[data-role="balance-label__value"]';
+      // const statusSelector = 'div[data-role="status-text"]';
+      // const balanceSelector = 'span[data-role="balance-label__value"]';
 
-      await page.waitForSelector(balanceSelector);
-      await page.waitForSelector(statusSelector);
+      // await page.waitForSelector(balanceSelector);
+      // await page.waitForSelector(statusSelector);
 
-      let currentBalance = await page.$eval(
-        balanceSelector,
-        el => el.textContent,
-      );
-      if (!currentBalance) {
-        throw new HttpErrors.BadRequest('error_balance');
-      }
-      const expectBalance =
-        parseFloat(currentBalance.replace(/,/g, '')) * profitRate +
-        parseFloat(currentBalance.replace(/,/g, ''));
+      // let currentBalance = await page.$eval(
+      //   balanceSelector,
+      //   el => el.textContent,
+      // );
+      // if (!currentBalance) {
+      //   throw new HttpErrors.BadRequest('error_balance');
+      // }
+      // const expectBalance =
+      //   parseFloat(currentBalance.replace(/,/g, '')) * profitRate +
+      //   parseFloat(currentBalance.replace(/,/g, ''));
 
-      console.log({profitRate});
-      console.log({expectBalance});
+      // console.log({profitRate});
+      // console.log({expectBalance});
 
-      const initialBalance = parseFloat(currentBalance.replace(/,/g, ''));
+      // const initialBalance = parseFloat(currentBalance.replace(/,/g, ''));
 
-      let data = await page.$eval(statusSelector, el => el.textContent);
+      // let data = await page.$eval(statusSelector, el => el.textContent);
 
+      // // const betObject = [
+      // //   'bet-spot-banker',
+      // //   'bet-spot-banker',
+      // //   'bet-spot-banker',
+      // //   'bet-spot-player',
+      // //   'bet-spot-player',
+      // //   'bet-spot-player',
+      // // ];
       // const betObject = [
       //   'bet-spot-banker',
       //   'bet-spot-banker',
       //   'bet-spot-banker',
       //   'bet-spot-player',
       //   'bet-spot-player',
+      //   'bet-spot-banker',
       //   'bet-spot-player',
       // ];
-      const betObject = [
-        'bet-spot-banker',
-        'bet-spot-banker',
-        'bet-spot-banker',
-        'bet-spot-player',
-        'bet-spot-player',
-        'bet-spot-banker',
-        'bet-spot-player',
-      ];
-      let betPositon = -1;
-      // let lastY: string = '4';
+      // let betPositon = -1;
+      // // let lastY: string = '4';
 
-      for (;;) {
-        // const x =  await page.$eval('svg[data-role="Bead-road"] > svg > use[y="2"]', el => el.getAttribute('x'));
+      // for (;;) {
+      //   // const x =  await page.$eval('svg[data-role="Bead-road"] > svg > use[y="2"]', el => el.getAttribute('x'));
 
-        // if(!currentXPositon){
-        // currentXPositon = x;
+      //   // if(!currentXPositon){
+      //   // currentXPositon = x;
 
-        // }
-        // try {
-        //   lastY = await page.$eval(
-        //     'svg[data-type="coordinates"]:last-child',
-        //     el => el.getAttribute('data-y'),
-        //   ) ?? '4';
-        // } catch (error) {
-        //   console.log({error});
-        // }
+      //   // }
+      //   // try {
+      //   //   lastY = await page.$eval(
+      //   //     'svg[data-type="coordinates"]:last-child',
+      //   //     el => el.getAttribute('data-y'),
+      //   //   ) ?? '4';
+      //   // } catch (error) {
+      //   //   console.log({error});
+      //   // }
 
-        if (data === 'PLACE YOUR BETS 5') {
-          // if (lastY) {
-          //   if (parseInt(lastY) === betObject.length - 1) {
-          //     betPositon === 0;
-          //   } else {
-          //     betPositon = parseInt(lastY);
-          //   }
-          //   break;
-          // }
-          // if(currentXPositon && currentXPositon !== x){
-          //   break;
-          // }
-          break;
-        }
+      //   if (data === 'PLACE YOUR BETS 5') {
+      //     // if (lastY) {
+      //     //   if (parseInt(lastY) === betObject.length - 1) {
+      //     //     betPositon === 0;
+      //     //   } else {
+      //     //     betPositon = parseInt(lastY);
+      //     //   }
+      //     //   break;
+      //     // }
+      //     // if(currentXPositon && currentXPositon !== x){
+      //     //   break;
+      //     // }
+      //     break;
+      //   }
 
-        data = await page.$eval(statusSelector, el => el.textContent);
-      }
+      //   data = await page.$eval(statusSelector, el => el.textContent);
+      // }
 
-      let win: boolean | null = null;
-      let tie = false;
-      let bet = false;
-      let numberOfConsecutiveLosses = 0;
-      let maxNumberOfConsecutiveLosses = 0;
-      let betAmount: number = betLevel;
+      // let win: boolean | null = null;
+      // let tie = false;
+      // let bet = false;
+      // let numberOfConsecutiveLosses = 0;
+      // let maxNumberOfConsecutiveLosses = 0;
+      // let betAmount: number = betLevel;
 
-      // let newTable = false;
+      // // let newTable = false;
 
-      const playCardInterval = setInterval(async () => {
-        data = await page.$eval(statusSelector, el => el.textContent);
-        if (!data) {
-          throw new HttpErrors.BadRequest('error_status');
-        }
-        switch (data) {
-          case 'PLAYER WINS': {
-            // newTable = false;
-            currentBalance = await page.$eval(
-              balanceSelector,
-              el => el.textContent,
-            );
-            if (!currentBalance) {
-              throw new HttpErrors.BadRequest('error_balance');
-            }
-            if (betObject[betPositon] === 'bet-spot-player') {
-              win = true;
-              const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
-              if (
-                parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance
-              ) {
-                clearInterval(playCardInterval);
-                await this.receiptService.createReceipt(email, {
-                  balance: curBalance,
-                  profit: curBalance - initialBalance,
-                  profitRate,
-                  accountId: account.id,
-                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  status: ReceiptStatus.COMPLETE,
-                } as Receipt);
-                await browser.close();
-              }
-            } else {
-              win = false;
-            }
-            tie = false;
-            bet = false;
-            break;
-          }
-          case 'BANKER WINS': {
-            // newTable = false;
-            currentBalance = await page.$eval(
-              balanceSelector,
-              el => el.textContent,
-            );
-            if (!currentBalance) {
-              throw new HttpErrors.BadRequest('error_balance');
-            }
-            if (betObject[betPositon] === 'bet-spot-banker') {
-              win = true;
-              const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
-              if (curBalance >= expectBalance) {
-                clearInterval(playCardInterval);
-                await this.receiptService.createReceipt(email, {
-                  balance: curBalance,
-                  profit: curBalance - initialBalance,
-                  profitRate,
-                  accountId: account.id,
-                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  status: ReceiptStatus.COMPLETE,
-                } as Receipt);
-                await browser.close();
-              }
-            } else {
-              win = false;
-            }
-            tie = false;
-            bet = false;
+      // const playCardInterval = setInterval(async () => {
+      //   data = await page.$eval(statusSelector, el => el.textContent);
+      //   if (!data) {
+      //     throw new HttpErrors.BadRequest('error_status');
+      //   }
+      //   switch (data) {
+      //     case 'PLAYER WINS': {
+      //       // newTable = false;
+      //       currentBalance = await page.$eval(
+      //         balanceSelector,
+      //         el => el.textContent,
+      //       );
+      //       if (!currentBalance) {
+      //         throw new HttpErrors.BadRequest('error_balance');
+      //       }
+      //       if (betObject[betPositon] === 'bet-spot-player') {
+      //         win = true;
+      //         const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
+      //         if (
+      //           parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance
+      //         ) {
+      //           clearInterval(playCardInterval);
+      //           await this.receiptService.createReceipt(email, {
+      //             balance: curBalance,
+      //             profit: curBalance - initialBalance,
+      //             profitRate,
+      //             accountId: account.id,
+      //             numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
+      //             status: ReceiptStatus.COMPLETE,
+      //           } as Receipt);
+      //           await browser.close();
+      //         }
+      //       } else {
+      //         win = false;
+      //       }
+      //       tie = false;
+      //       bet = false;
+      //       break;
+      //     }
+      //     case 'BANKER WINS': {
+      //       // newTable = false;
+      //       currentBalance = await page.$eval(
+      //         balanceSelector,
+      //         el => el.textContent,
+      //       );
+      //       if (!currentBalance) {
+      //         throw new HttpErrors.BadRequest('error_balance');
+      //       }
+      //       if (betObject[betPositon] === 'bet-spot-banker') {
+      //         win = true;
+      //         const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
+      //         if (curBalance >= expectBalance) {
+      //           clearInterval(playCardInterval);
+      //           await this.receiptService.createReceipt(email, {
+      //             balance: curBalance,
+      //             profit: curBalance - initialBalance,
+      //             profitRate,
+      //             accountId: account.id,
+      //             numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
+      //             status: ReceiptStatus.COMPLETE,
+      //           } as Receipt);
+      //           await browser.close();
+      //         }
+      //       } else {
+      //         win = false;
+      //       }
+      //       tie = false;
+      //       bet = false;
 
-            break;
-          }
-          case 'TIE': {
-            tie = true;
-            bet = false;
-            break;
-          }
-          default: {
-            // if (data.includes('PLACE YOUR BET') && !newTable) {
-            //   try {
-            //     const x = await page.$eval('svg[data-type="coordinates"]', el =>
-            //       el.getAttribute('data-x'),
-            //     );
+      //       break;
+      //     }
+      //     case 'TIE': {
+      //       tie = true;
+      //       bet = false;
+      //       break;
+      //     }
+      //     default: {
+      //       // if (data.includes('PLACE YOUR BET') && !newTable) {
+      //       //   try {
+      //       //     const x = await page.$eval('svg[data-type="coordinates"]', el =>
+      //       //       el.getAttribute('data-x'),
+      //       //     );
 
-            //   } catch (error) {
-            //     console.log({error});
+      //       //   } catch (error) {
+      //       //     console.log({error});
 
-            //     newTable = true;
-            //     bet = false;
-            //     betPositon = -1;
-            //     await this.undoBet(betAmount,level,page);
-            //   }
-            // }
+      //       //     newTable = true;
+      //       //     bet = false;
+      //       //     betPositon = -1;
+      //       //     await this.undoBet(betAmount,level,page);
+      //       //   }
+      //       // }
 
-            if (data.includes('PLACE YOUR BET') && !bet) {
-              const acc = await this.accountRepository.findById(id);
-              if (acc.botStatus === BotStatus.DEACTIVATE) {
-                currentBalance = await page.$eval(
-                  balanceSelector,
-                  el => el.textContent,
-                );
-                if (!currentBalance) {
-                  throw new HttpErrors.BadRequest('error_balance');
-                }
-                const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
+      //       if (data.includes('PLACE YOUR BET') && !bet) {
+      //         const acc = await this.accountRepository.findById(id);
+      //         if (acc.botStatus === BotStatus.DEACTIVATE) {
+      //           currentBalance = await page.$eval(
+      //             balanceSelector,
+      //             el => el.textContent,
+      //           );
+      //           if (!currentBalance) {
+      //             throw new HttpErrors.BadRequest('error_balance');
+      //           }
+      //           const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
 
-                clearInterval(playCardInterval);
-                await this.receiptService.createReceipt(email, {
-                  balance: curBalance,
-                  profit: curBalance - initialBalance,
-                  profitRate,
-                  accountId: account.id,
-                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  status: ReceiptStatus.INCOMPLETE,
-                } as Receipt);
-                await browser.close();
-                return;
-              }
-              if (betPositon !== betObject.length - 1) {
-                betPositon++;
-              } else {
-                betPositon = 0;
-              }
+      //           clearInterval(playCardInterval);
+      //           await this.receiptService.createReceipt(email, {
+      //             balance: curBalance,
+      //             profit: curBalance - initialBalance,
+      //             profitRate,
+      //             accountId: account.id,
+      //             numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
+      //             status: ReceiptStatus.INCOMPLETE,
+      //           } as Receipt);
+      //           await browser.close();
+      //           return;
+      //         }
+      //         if (betPositon !== betObject.length - 1) {
+      //           betPositon++;
+      //         } else {
+      //           betPositon = 0;
+      //         }
 
-              bet = true;
-              try {
-                if (isNull(win) || win) {
-                  // await page.click(`div[data-value="${betLevel}"]`);
-                  await this.bet(betLevel, level, page, betObject[betPositon]);
-                  betAmount = betLevel;
-                  // await page.click(`div[data-role="${betObject[betPositon]}"]`);
-                  numberOfConsecutiveLosses = 0;
-                } else {
-                  if (!tie) {
-                    // if(!newTable){
-                    numberOfConsecutiveLosses++;
-                    betAmount = betAmount * 2;
-                    // }
-                  }
-                  if (
-                    numberOfConsecutiveLosses > maxNumberOfConsecutiveLosses
-                  ) {
-                    maxNumberOfConsecutiveLosses = numberOfConsecutiveLosses;
-                  }
+      //         bet = true;
+      //         try {
+      //           if (isNull(win) || win) {
+      //             // await page.click(`div[data-value="${betLevel}"]`);
+      //             await this.bet(betLevel, level, page, betObject[betPositon]);
+      //             betAmount = betLevel;
+      //             // await page.click(`div[data-role="${betObject[betPositon]}"]`);
+      //             numberOfConsecutiveLosses = 0;
+      //           } else {
+      //             if (!tie) {
+      //               // if(!newTable){
+      //               numberOfConsecutiveLosses++;
+      //               betAmount = betAmount * 2;
+      //               // }
+      //             }
+      //             if (
+      //               numberOfConsecutiveLosses > maxNumberOfConsecutiveLosses
+      //             ) {
+      //               maxNumberOfConsecutiveLosses = numberOfConsecutiveLosses;
+      //             }
 
-                  // let temp = Math.floor(betAmount / 4);
+      //             // let temp = Math.floor(betAmount / 4);
 
-                  // for (;;) {
-                  //   if (temp === 0) {
-                  //     break;
-                  //   }
-                  //   await page.click(`div[data-role="${betObject[betPositon]}"]`);
-                  //   temp--;
-                  // }
-                  // await page.waitForSelector(doubleButtonSelector);
-                  // await page.click(doubleButtonSelector);
-                  await this.bet(betAmount, level, page, betObject[betPositon]);
-                }
-              } catch (error) {
-                console.log({error});
+      //             // for (;;) {
+      //             //   if (temp === 0) {
+      //             //     break;
+      //             //   }
+      //             //   await page.click(`div[data-role="${betObject[betPositon]}"]`);
+      //             //   temp--;
+      //             // }
+      //             // await page.waitForSelector(doubleButtonSelector);
+      //             // await page.click(doubleButtonSelector);
+      //             await this.bet(betAmount, level, page, betObject[betPositon]);
+      //           }
+      //         } catch (error) {
+      //           console.log({error});
 
-                bet = false;
-              }
-            }
-            break;
-          }
-        }
-      }, 1000);
+      //           bet = false;
+      //         }
+      //       }
+      //       break;
+      //     }
+      //   }
+      // }, 1000);
     } catch (error) {
       console.log({error});
     }
@@ -344,7 +349,7 @@ export class PuppeteerService {
     await page.type('input[name="username"]', username, {delay: 50});
     await page.type('input[name="password"]', password, {delay: 50});
 
-    const loginButtonSelector = 'input[value="Log in"]';
+    const loginButtonSelector = 'button[type="submit"]';
 
     await page.waitForSelector(loginButtonSelector);
 
@@ -353,11 +358,11 @@ export class PuppeteerService {
       loginButtonSelector,
     );
 
-    await page.waitForNavigation();
+    await page.waitForNavigation({waitUntil: "domcontentloaded"});
   }
 
   private async chooseCategory(page: Page): Promise<void> {
-    const bacaratSelector = 'a[href="/entry?category=baccarat"]';
+    const bacaratSelector = 'a[href="/categories/baccarat"]';
 
     await page.waitForSelector(bacaratSelector);
 
@@ -366,9 +371,9 @@ export class PuppeteerService {
       bacaratSelector,
     );
 
-    await page.waitForNavigation();
+    await page.waitForNavigation({waitUntil: "domcontentloaded"});
 
-    const speedBacaratSelector = 'div[data-tableid="leqhceumaq6qfoug"] > div';
+    const speedBacaratSelector = 'a[href="/casino/live-baccarat/live-speed-baccarat-a"]';
 
     await page.waitForSelector(speedBacaratSelector);
 
@@ -377,15 +382,29 @@ export class PuppeteerService {
       speedBacaratSelector,
     );
 
-    await page.waitForNavigation();
+    await page.waitForNavigation({waitUntil: "domcontentloaded"});
 
-    const viewButtonSelector = 'button[data-role="video-button"]';
+    await page.waitForSelector('iframe[id="gameIframe"]');
+
+
+    const gameSrc = await page.$eval('iframe[id="gameIframe"]', el =>
+       el.getAttribute('src'),
+    );
+
+    if(!gameSrc){
+      throw new HttpErrors.BadGateway('link_does_not_exist')
+    }
+
+    await page.goto(gameSrc)
+
+    const viewButtonSelector = 'div[data-role="switch-layout-button-container"] > button';
 
     await page.waitForSelector(viewButtonSelector);
 
-    await page.waitForTimeout(3000);
-
-    await page.click(viewButtonSelector);
+    await page.evaluate(
+      selector => document.querySelector(selector).click(),
+      viewButtonSelector,
+    );
   }
 
   private async bet(
