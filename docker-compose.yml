@@ -12,6 +12,8 @@ services:
       - VIRTUAL_PORT=3001
       # - CERT_NAME=api.flamingoapp.org
       - LETSENCRYPT_HOST=api.flamingoapp.org
+    depends_on:
+      - db
 
   # web:
   #   build: .
@@ -39,6 +41,19 @@ services:
   #     - /var/run/docker.sock:/tmp/docker.sock:ro
   #     - ./certbot/conf:/etc/nginx/ssl
   #     - ./certbot/data:/var/www/certbot
+
+  db:
+    container_name: postgres
+    restart: unless-stopped
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: fwOIQo5Aar
+      POSTGRES_DB: bot_staging_db
+      POSTGRES_USER: bot_staging
+    volumes:
+      - postgres:/data/postgres
 
   nginx-proxy:
     image: nginxproxy/nginx-proxy
@@ -88,6 +103,7 @@ volumes:
   dhparam:
   certs:
   acme:
+  postgres:
 
   # nginx:
   #   build:
