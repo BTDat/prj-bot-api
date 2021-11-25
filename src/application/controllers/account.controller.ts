@@ -41,7 +41,6 @@ import {
 } from '../services/local-authentication.service';
 import {AccountFactory} from '../../domain/services/account-factory.service';
 import {AccountSendMailFactory} from '../services/account-send-mail-factory.service';
-import {AccountCreationService} from '../services/account-creation.service';
 
 export class AccountController {
   constructor(
@@ -59,9 +58,6 @@ export class AccountController {
 
     @service(AccountService)
     private accountService: AccountService,
-
-    @service(AccountCreationService)
-    private accountCreationService: AccountCreationService,
 
     @service(AccountSendMailFactory)
     private accountSendMailFactory: AccountSendMailFactory,
@@ -115,7 +111,7 @@ export class AccountController {
       lastName: string;
     },
   ): Promise<Account> {
-    return this.accountCreationService.createAccount(values);
+    return this.accountService.createAccount(values);
   }
 
   @get('/accounts/me', {

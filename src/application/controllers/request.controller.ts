@@ -21,11 +21,11 @@ import {
   RequestType,
   SignupRequest,
 } from '../../domain/models/request.model';
+import {AccountService} from '../../domain/services/account.service';
 import {RequestFactory} from '../../domain/services/request-factory.service';
 import {AccountRepository} from '../../infrastructure/repositories';
 import {RequestRepository} from '../../infrastructure/repositories/request.repository';
 import {NodeMailerMailService} from '../../infrastructure/services/nodemailer.service';
-import {AccountCreationService} from '../services/account-creation.service';
 import {AccountSendMailFactory} from '../services/account-send-mail-factory.service';
 
 @api({
@@ -45,8 +45,8 @@ export class RequestController {
     @service(NodeMailerMailService)
     private mailService: NodeMailerMailService,
 
-    @service(AccountCreationService)
-    private accountCreationService: AccountCreationService,
+    @service(AccountService)
+    private accountService: AccountService,
 
     @service(AccountSendMailFactory)
     private accountSendMailFactory: AccountSendMailFactory,
@@ -250,7 +250,7 @@ export class RequestController {
       data: {email, username, firstName, lastName},
     } = request;
     const {profitRate, password} = values;
-    const result = await this.accountCreationService.createAccount({
+    const result = await this.accountService.createAccount({
       email,
       username,
       firstName,

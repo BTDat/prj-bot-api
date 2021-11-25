@@ -5,6 +5,6 @@ export interface BotRequestBody {
 }
 
 export enum BotStatus {
-  ACTIVATE = 'active',
+  ACTIVATE = 'activate',
   DEACTIVATE = 'deactivate',
 }
