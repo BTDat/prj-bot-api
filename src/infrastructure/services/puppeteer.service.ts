@@ -1,5 +1,4 @@
 import {bind} from '@loopback/context';
-
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import isNull from 'lodash/isNull';
@@ -8,30 +7,19 @@ import {BotRequestBody, BotStatus} from '../../domain/models/bot.model';
 import {Account} from '../../domain/models/account.model';
 import {repository} from '@loopback/repository';
 import {service} from '@loopback/core';
-import {AccountRepository, ReceiptRepository} from '../repositories';
-import {ReceiptFactory} from '../../domain/services/receipt-factory.service';
-import {Receipt} from '../../domain/models/receipt.model';
-import {NodeMailerMailService} from './nodemailer.service';
-import {AccountSendMailFactory} from '../../application/services/account-send-mail-factory.service';
+import {AccountRepository} from '../repositories';
+import {Receipt, ReceiptStatus} from '../../domain/models/receipt.model';
 import {Page} from 'puppeteer-extra-plugin/dist/puppeteer';
+import {ReceiptService} from '../../domain/services/receipt.service';
 
 @bind()
 export class PuppeteerService {
   constructor(
-    @repository(ReceiptRepository)
-    private receiptRepository: ReceiptRepository,
-
     @repository(AccountRepository)
     private accountRepository: AccountRepository,
 
-    @service(ReceiptFactory)
-    private receiptFactory: ReceiptFactory,
-
-    @service(NodeMailerMailService)
-    private mailService: NodeMailerMailService,
-
-    @service(AccountSendMailFactory)
-    private accountSendMailFactory: AccountSendMailFactory,
+    @service(ReceiptService)
+    private receiptService: ReceiptService,
   ) {}
 
   public async run(values: BotRequestBody, account: Account): Promise<void> {
@@ -50,6 +38,9 @@ export class PuppeteerService {
 
     try {
       const browser = await puppeteer.launch(options);
+      browser.on('disconnected', () => {
+        console.log('Disconnected');
+      });
       const page = await browser.newPage();
 
       await page.goto('https://studio.evolutiongaming.com/', {
@@ -170,18 +161,14 @@ export class PuppeteerService {
                 parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance
               ) {
                 clearInterval(playCardInterval);
-                await Promise.all([
-                  this.createReceipt(email, {
-                    balance: curBalance,
-                    profit: curBalance - initialBalance,
-                    profitRate,
-                    accountId: account.id,
-                    numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  } as Receipt),
-                  this.accountRepository.updateById(id, {
-                    botStatus: BotStatus.DEACTIVATE,
-                  }),
-                ]);
+                await this.receiptService.createReceipt(email, {
+                  balance: curBalance,
+                  profit: curBalance - initialBalance,
+                  profitRate,
+                  accountId: account.id,
+                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
+                  status: ReceiptStatus.COMPLETE,
+                } as Receipt);
                 await browser.close();
               }
             } else {
@@ -205,18 +192,14 @@ export class PuppeteerService {
               const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
               if (curBalance >= expectBalance) {
                 clearInterval(playCardInterval);
-                await Promise.all([
-                  this.createReceipt(email, {
-                    balance: curBalance,
-                    profit: curBalance - initialBalance,
-                    profitRate,
-                    accountId: account.id,
-                    numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  } as Receipt),
-                  this.accountRepository.updateById(id, {
-                    botStatus: BotStatus.DEACTIVATE,
-                  }),
-                ]);
+                await this.receiptService.createReceipt(email, {
+                  balance: curBalance,
+                  profit: curBalance - initialBalance,
+                  profitRate,
+                  accountId: account.id,
+                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
+                  status: ReceiptStatus.COMPLETE,
+                } as Receipt);
                 await browser.close();
               }
             } else {
@@ -250,6 +233,29 @@ export class PuppeteerService {
             // }
 
             if (data.includes('PLACE YOUR BET') && !bet) {
+              const acc = await this.accountRepository.findById(id);
+              if (acc.botStatus === BotStatus.DEACTIVATE) {
+                currentBalance = await page.$eval(
+                  balanceSelector,
+                  el => el.textContent,
+                );
+                if (!currentBalance) {
+                  throw new HttpErrors.BadRequest('error_balance');
+                }
+                const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
+
+                clearInterval(playCardInterval);
+                await this.receiptService.createReceipt(email, {
+                  balance: curBalance,
+                  profit: curBalance - initialBalance,
+                  profitRate,
+                  accountId: account.id,
+                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
+                  status: ReceiptStatus.INCOMPLETE,
+                } as Receipt);
+                await browser.close();
+                return;
+              }
               if (betPositon !== betObject.length - 1) {
                 betPositon++;
               } else {
@@ -302,9 +308,6 @@ export class PuppeteerService {
       }, 1000);
     } catch (error) {
       console.log({error});
-      await this.accountRepository.updateById(id, {
-        botStatus: BotStatus.DEACTIVATE,
-      });
     }
 
     // await page.evaluate((selector) => document.querySelector(selector).click(), viewButtonSelector);
@@ -383,26 +386,6 @@ export class PuppeteerService {
     await page.waitForTimeout(3000);
 
     await page.click(viewButtonSelector);
-  }
-
-  private async sendInvoiceEmail(
-    recipient: string,
-    receipt: Receipt,
-  ): Promise<void> {
-    const email = await this.accountSendMailFactory.buildInvoiceEmail(
-      recipient,
-      receipt,
-    );
-    await this.mailService.send(email);
-  }
-
-  private async createReceipt(
-    recipient: string,
-    receipt: Omit<Receipt, 'id' | 'createdAt' | 'updatedAt'>,
-  ): Promise<void> {
-    const receiptBuilding = await this.receiptFactory.buildReceipt(receipt);
-    const newReceipt = await this.receiptRepository.create(receiptBuilding);
-    this.sendInvoiceEmail(recipient, newReceipt);
   }
 
   private async bet(

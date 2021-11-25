@@ -13,6 +13,7 @@ export class ReceiptFactory {
       | 'profit'
       | 'profitRate'
       | 'numberOfConsecutiveLosses'
+      | 'status'
     >,
   ): Promise<Receipt> {
     return new Receipt({

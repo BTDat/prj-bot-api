@@ -2,7 +2,7 @@ import {authenticate} from '@loopback/authentication';
 import {AUTHENTICATED, authorize} from '@loopback/authorization';
 import {inject, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {api, post, requestBody} from '@loopback/rest';
+import {api, HttpErrors, post, requestBody} from '@loopback/rest';
 import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
 import {BotRequestBody, BotStatus} from '../../domain/models/bot.model';
 import {AccountRepository} from '../../infrastructure/repositories';
@@ -23,7 +23,7 @@ export class BotController {
     private accountRepository: AccountRepository,
   ) {}
 
-  @post('/activate', {
+  @post('/me/activate', {
     responses: {
       '200': {
         description: 'Run bot',
@@ -42,7 +42,7 @@ export class BotController {
   })
   @authenticate('jwt')
   @authorize({allowedRoles: [AUTHENTICATED]})
-  async createReceipt(
+  async activateBot(
     @requestBody({
       content: {
         'application/json': {
@@ -64,6 +64,9 @@ export class BotController {
       const account = await this.accountRepository.findById(
         parseInt(accountId),
       );
+      if (account.botStatus === BotStatus.ACTIVATE) {
+        throw new HttpErrors.BadGateway('bot_has_been_activated');
+      }
       await this.accountRepository.updateById(account.id, {
         botStatus: BotStatus.ACTIVATE,
       });
@@ -74,6 +77,35 @@ export class BotController {
         success: false,
       };
     }
+    return {
+      success: true,
+    };
+  }
+
+  @post('/me/deactivate', {
+    responses: {
+      '200': {
+        description: 'Stop bot',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: {type: 'boolean'},
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @authenticate('jwt')
+  @authorize({allowedRoles: [AUTHENTICATED]})
+  async deactivateBot(): Promise<{success: boolean}> {
+    const accountId = this.currentAuthUserProfile[securityId];
+    await this.accountRepository.updateById(parseInt(accountId), {
+      botStatus: BotStatus.DEACTIVATE,
+    });
     return {
       success: true,
     };

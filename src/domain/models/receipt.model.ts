@@ -1,6 +1,11 @@
 import {model, property, Entity, belongsTo} from '@loopback/repository';
 import {Account} from './account.model';
 
+export enum ReceiptStatus {
+  INCOMPLETE = 'incomplete',
+  COMPLETE = 'complete',
+}
+
 @model({
   settings: {
     postgresql: {
@@ -34,6 +39,9 @@ export class Receipt extends Entity {
     },
   )
   accountId: number;
+
+  @property({type: 'string'})
+  status: ReceiptStatus;
 
   @property({
     type: 'number',
