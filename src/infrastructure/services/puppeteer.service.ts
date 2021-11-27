@@ -353,7 +353,7 @@ export class PuppeteerService {
       loginButtonSelector,
     );
 
-    await page.waitForNavigation();
+    await page.waitForNavigation({waitUntil: 'domcontentloaded'});
   }
 
   private async chooseCategory(page: Page): Promise<void> {
@@ -366,7 +366,7 @@ export class PuppeteerService {
       bacaratSelector,
     );
 
-    await page.waitForNavigation();
+    await page.waitForNavigation({waitUntil: 'domcontentloaded'});
 
     const speedBacaratSelector = 'div[data-tableid="leqhceumaq6qfoug"] > div';
 
@@ -377,7 +377,7 @@ export class PuppeteerService {
       speedBacaratSelector,
     );
 
-    await page.waitForNavigation();
+    await page.waitForNavigation({waitUntil: 'domcontentloaded'});
 
     const viewButtonSelector = 'button[data-role="video-button"]';
 
