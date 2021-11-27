@@ -11,6 +11,7 @@ import {AccountRepository} from '../repositories';
 import {Receipt, ReceiptStatus} from '../../domain/models/receipt.model';
 import {Page} from 'puppeteer-extra-plugin/dist/puppeteer';
 import {ReceiptService} from '../../domain/services/receipt.service';
+import {Browser} from 'puppeteer';
 
 @bind()
 export class PuppeteerService {
@@ -38,8 +39,26 @@ export class PuppeteerService {
 
     try {
       const browser = await puppeteer.launch(options);
-      browser.on('disconnected', () => {
+      browser.on('disconnected', async () => {
         console.log('Disconnected');
+        if (currentBalance) {
+          const acc = await this.accountRepository.findById(id);
+          const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
+          await this.receiptService.createReceipt(email, {
+            balance: curBalance,
+            profit: curBalance - initialBalance,
+            profitRate,
+            accountId: account.id,
+            numberOfConsecutiveLosses:
+              !win && !tie
+                ? maxNumberOfConsecutiveLosses + 1
+                : maxNumberOfConsecutiveLosses,
+            status:
+              acc.botStatus === BotStatus.ACTIVATE
+                ? ReceiptStatus.COMPLETE
+                : ReceiptStatus.INCOMPLETE,
+          } as Receipt);
+        }
       });
       const page = await browser.newPage();
 
@@ -157,24 +176,21 @@ export class PuppeteerService {
             if (betObject[betPositon] === 'bet-spot-player') {
               win = true;
               const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
-              if (
-                parseFloat(currentBalance.replace(/,/g, '')) >= expectBalance
-              ) {
-                clearInterval(playCardInterval);
-                await this.receiptService.createReceipt(email, {
-                  balance: curBalance,
-                  profit: curBalance - initialBalance,
-                  profitRate,
-                  accountId: account.id,
-                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  status: ReceiptStatus.COMPLETE,
-                } as Receipt);
-                await browser.close();
+              if (curBalance >= expectBalance) {
+                await this.stop(page, browser, playCardInterval);
               }
             } else {
               win = false;
             }
             tie = false;
+            if (bet) {
+              await this.deactivateBot(
+                {accountId: id},
+                page,
+                browser,
+                playCardInterval,
+              );
+            }
             bet = false;
             break;
           }
@@ -191,27 +207,34 @@ export class PuppeteerService {
               win = true;
               const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
               if (curBalance >= expectBalance) {
-                clearInterval(playCardInterval);
-                await this.receiptService.createReceipt(email, {
-                  balance: curBalance,
-                  profit: curBalance - initialBalance,
-                  profitRate,
-                  accountId: account.id,
-                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  status: ReceiptStatus.COMPLETE,
-                } as Receipt);
-                await browser.close();
+                await this.stop(page, browser, playCardInterval);
               }
             } else {
               win = false;
             }
             tie = false;
+            if (bet) {
+              await this.deactivateBot(
+                {accountId: id},
+                page,
+                browser,
+                playCardInterval,
+              );
+            }
             bet = false;
 
             break;
           }
           case 'TIE': {
             tie = true;
+            if (bet) {
+              await this.deactivateBot(
+                {accountId: id},
+                page,
+                browser,
+                playCardInterval,
+              );
+            }
             bet = false;
             break;
           }
@@ -233,29 +256,6 @@ export class PuppeteerService {
             // }
 
             if (data.includes('PLACE YOUR BET') && !bet) {
-              const acc = await this.accountRepository.findById(id);
-              if (acc.botStatus === BotStatus.DEACTIVATE) {
-                currentBalance = await page.$eval(
-                  balanceSelector,
-                  el => el.textContent,
-                );
-                if (!currentBalance) {
-                  throw new HttpErrors.BadRequest('error_balance');
-                }
-                const curBalance = parseFloat(currentBalance.replace(/,/g, ''));
-
-                clearInterval(playCardInterval);
-                await this.receiptService.createReceipt(email, {
-                  balance: curBalance,
-                  profit: curBalance - initialBalance,
-                  profitRate,
-                  accountId: account.id,
-                  numberOfConsecutiveLosses: maxNumberOfConsecutiveLosses,
-                  status: ReceiptStatus.INCOMPLETE,
-                } as Receipt);
-                await browser.close();
-                return;
-              }
               if (betPositon !== betObject.length - 1) {
                 betPositon++;
               } else {
@@ -404,6 +404,30 @@ export class PuppeteerService {
         }
         await page.click(`div[data-role="${betTarget}"]`);
       }
+    }
+  }
+
+  private async stop(
+    page: Page,
+    browser: Browser,
+    interval: NodeJS.Timer,
+  ): Promise<void> {
+    clearInterval(interval);
+    await page.close();
+    await browser.close();
+  }
+
+  private async deactivateBot(
+    values: {
+      accountId: number;
+    },
+    page: Page,
+    browser: Browser,
+    interval: NodeJS.Timer,
+  ): Promise<void> {
+    const acc = await this.accountRepository.findById(values.accountId);
+    if (acc.botStatus === BotStatus.DEACTIVATE) {
+      await this.stop(page, browser, interval);
     }
   }
 
