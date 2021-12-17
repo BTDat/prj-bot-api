@@ -30,10 +30,10 @@ export class PuppeteerService {
     puppeteer.use(StealthPlugin());
 
     const options = {
-      headless: false,
+      headless: true,
       ignoreHTTPSErrors: true,
-      executablePath:
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      // executablePath:
+      //   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
       defaultViewport: null,
     };
 
