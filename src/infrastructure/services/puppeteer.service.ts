@@ -30,11 +30,14 @@ export class PuppeteerService {
     puppeteer.use(StealthPlugin());
 
     const options = {
-      headless: true,
+      // headless: true,
       ignoreHTTPSErrors: true,
+      executablePath: "/usr/bin/chromium-browser",
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
+      ignoreDefaultArgs: ["--disable-extensions"],
       // executablePath:
       //   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      defaultViewport: null,
+      // defaultViewport: null,
     };
 
     try {
